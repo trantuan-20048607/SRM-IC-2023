@@ -1,6 +1,7 @@
 #ifndef SRM_IC_2023_MODULES_CAMERA_BASE_CAMERA_BASE_H_
 #define SRM_IC_2023_MODULES_CAMERA_BASE_CAMERA_BASE_H_
 
+#include <atomic>
 #include "common/factory.h"
 #include "common/frame.h"
 #include "common/buffer.h"
@@ -30,7 +31,8 @@ class Camera {
  protected:
   std::vector<std::pair<FrameCallback, void *>> callback_list_;
   std::string serial_number_;
-  bool stream_running_{}, stop_flag_{};
+  bool stream_running_{};
+  std::atomic_bool stop_flag_{};
   pthread_t daemon_thread_id_{};
   Buffer<Frame, 2> buffer_;
 };

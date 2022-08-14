@@ -1,7 +1,6 @@
 #ifndef SRM_IC_2023_MODULES_CONTROLLER_BASE_CONTROLLER_BASE_H_
 #define SRM_IC_2023_MODULES_CONTROLLER_BASE_CONTROLLER_BASE_H_
 
-#include <memory>
 #include "serial/serial.h"
 #include "video-source-base/video-source-base.h"
 #include "video-writer/video-writer.h"
@@ -22,7 +21,7 @@ class Controller {
  protected:
   bool Initialize(const std::string &type_name);
 
-  static bool exit_signal_;
+  static std::atomic_bool exit_signal_;
 
   std::unique_ptr<video_source::VideoSource> video_source_;
   std::unique_ptr<serial::Serial> serial_;

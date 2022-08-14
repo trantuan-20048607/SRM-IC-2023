@@ -2,7 +2,7 @@
 #include "cli-arg-parser/cli-arg-parser.h"
 #include "controller-base/controller-base.h"
 
-bool controller::Controller::exit_signal_ = false;
+std::atomic_bool controller::Controller::exit_signal_ = false;
 
 void SignalHandler(int signal) {
   if (signal == SIGINT) {

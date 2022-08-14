@@ -25,9 +25,10 @@ void video_writer::VideoWriter::Write(cv::Mat &&frame) {
 
 void video_writer::VideoWriter::WritingThreadFunction(void *obj) {
   auto self = static_cast<VideoWriter *>(obj);
+  cv::Mat frame;
   while (!self->stop_flag_) {
-    cv::Mat frame;
-    if (self->buffer_.Pop(frame))
+    while (self->buffer_.Pop(frame))
       self->writer_->write(frame);
+    usleep(10);
   }
 }

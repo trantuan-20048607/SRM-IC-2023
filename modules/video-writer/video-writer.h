@@ -2,6 +2,7 @@
 #define SRM_IC_2023_MODULES_VIDEO_WRITER_VIDEO_WRITER_H_
 
 #include <thread>
+#include <atomic>
 #include <opencv2/videoio.hpp>
 #include "common/buffer.h"
 
@@ -18,9 +19,9 @@ class VideoWriter final {
   static void WritingThreadFunction(void *obj);
 
   std::unique_ptr<cv::VideoWriter> writer_;
-  Buffer<cv::Mat, 4> buffer_;
+  Buffer<cv::Mat, 4096> buffer_;
   std::thread thread_;
-  bool stop_flag_{};
+  std::atomic_bool stop_flag_{};
 };
 }
 
