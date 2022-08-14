@@ -61,11 +61,14 @@ bool video_source::file::FileVideoSource::Initialize(const std::string &config_f
     return false;
   }
   frame_rate_ = video_.get(cv::CAP_PROP_FPS);
+  LOG(INFO) << "Initialized file video source.";
   return true;
 }
 
 bool video_source::file::FileVideoSource::GetFrame(Frame &frame) {
-  if (video_.read(frame.image)) {
+  cv::Mat image;
+  if (video_.read(image)) {
+    frame.image = std::move(image);
     time_stamp_ += uint64_t(1e9 / frame_rate_);
     frame.time_stamp = time_stamp_;
     for (auto p : callback_list_)
@@ -77,9 +80,11 @@ bool video_source::file::FileVideoSource::GetFrame(Frame &frame) {
 
 void video_source::file::FileVideoSource::RegisterFrameCallback(FrameCallback callback, void *obj) {
   callback_list_.emplace_back(callback, obj);
+  DLOG(INFO) << "Registered video source callback FUNC " << callback << " OBJ " << obj << ".";
 }
 
 void video_source::file::FileVideoSource::UnregisterFrameCallback(FrameCallback callback) {
   auto filter = [callback](auto p) { return p.first == callback; };
   callback_list_.erase(std::remove_if(callback_list_.begin(), callback_list_.end(), filter), callback_list_.end());
+  DLOG(INFO) << "Unregistered video source callback FUNC " << callback << ".";
 }

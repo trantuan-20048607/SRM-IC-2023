@@ -12,5 +12,6 @@ bool video_writer::VideoWriter::Open(const std::string &video_file, cv::Size fra
     writer_.reset();
     return false;
   }
+  LOG(INFO) << "Opened video file " << video_file << ".";
   return true;
 }

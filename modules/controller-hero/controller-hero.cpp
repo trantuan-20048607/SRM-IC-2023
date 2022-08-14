@@ -10,7 +10,7 @@ bool controller::hero::HeroController::Initialize() {
 
 int controller::hero::HeroController::Run() {
   double fps = 0, show_fps = 0;
-  bool pause = false;
+  bool pause = false, show_warning = true;
   struct timespec ts_start{};
 
   constexpr auto frame_time_str = [](auto time_stamp) {
@@ -30,7 +30,7 @@ int controller::hero::HeroController::Run() {
   };
 
   auto update_frame_data = [&]() {
-    static bool show_warning = true;
+    if (pause) return false;
     auto ret = video_source_->GetFrame(frame_);
     if (!ret && show_warning)
       LOG(WARNING) << "Failed to get frame data from video source."
@@ -40,14 +40,22 @@ int controller::hero::HeroController::Run() {
   };
 
   auto update_window = [&](const std::string &title) {
+    static uint32_t rec_frame_count = 0;
     std::ostringstream ss_fps;
     ss_fps << std::fixed << std::setprecision(0) << show_fps;
-    if (!frame_.image.empty() && !pause) {
-      if (cli_argv.Record())
+    if (!pause && show_warning) {
+      if (cli_argv.Record()) {
         video_writer_.Write(frame_.image);
+        ++rec_frame_count;
+      }
       if (cli_argv.UI()) {
-        cv::putText(frame_.image, frame_time_str(frame_.time_stamp) + " FPS: " + ss_fps.str(),
-                    cv::Point(0, 22), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 192, 0));
+        cv::putText(frame_.image, frame_time_str(frame_.time_stamp),
+                    cv::Point(0, 24), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 192, 0));
+        cv::putText(frame_.image, "FPS: " + ss_fps.str(),
+                    cv::Point(0, 48), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 192, 0));
+        if (cli_argv.Record())
+          cv::putText(frame_.image, "REC: " + std::to_string(rec_frame_count), cv::Point(0, 72),
+                      cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 192));
         cv::imshow(title, frame_.image);
       }
     }
@@ -80,7 +88,7 @@ int controller::hero::HeroController::Run() {
 
   std::thread auto_log_fps([&]() {
     while (!exit_signal_) {
-      if (!pause) {
+      if (!pause && show_warning) {
         show_fps = fps;
         LOG(INFO) << "FPS: " << fps;
       }
@@ -90,7 +98,7 @@ int controller::hero::HeroController::Run() {
 
   while (!exit_signal_) {
     start_count_fps();
-    if (!pause) update_frame_data();
+    update_frame_data();
     update_window("HERO");
     stop_count_fps();
     check_key();

@@ -83,6 +83,7 @@ bool video_source::camera::CameraVideoSource::Initialize(const std::string &conf
     clean();
     return false;
   }
+  LOG(INFO) << "Initialized camera video source.";
   return true;
 }
 
@@ -92,8 +93,10 @@ bool video_source::camera::CameraVideoSource::GetFrame(Frame &frame) {
 
 void video_source::camera::CameraVideoSource::RegisterFrameCallback(FrameCallback callback, void *obj) {
   if (camera_) camera_->RegisterFrameCallback(callback, obj);
+  DLOG(INFO) << "Registered video source callback FUNC " << callback << " OBJ " << obj << ".";
 }
 
 void video_source::camera::CameraVideoSource::UnregisterFrameCallback(FrameCallback callback) {
   if (camera_) camera_->UnregisterFrameCallback(callback);
+  DLOG(INFO) << "Unregistered video source callback FUNC " << callback << ".";
 }

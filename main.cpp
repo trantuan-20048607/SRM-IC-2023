@@ -1,5 +1,4 @@
 #include <csignal>
-#include <glog/logging.h>
 #include "cli-arg-parser/cli-arg-parser.h"
 #include "controller-base/controller-base.h"
 
@@ -17,13 +16,13 @@ void SignalHandler(int signal) {
 
 int main(int argc, char **argv) {
   cli_argv.Parse(argc, argv);
-  auto controller = controller::CreateController(cli_argv.ControllerType());
+  std::unique_ptr<controller::Controller> controller;
+  controller.reset(controller::CreateController(cli_argv.ControllerType()));
   if (!controller) return -1;
   if (!controller->Initialize()) return 1;
   std::signal(SIGINT, &SignalHandler);
   std::signal(SIGTERM, &SignalHandler);
   int ret = controller->Run();
-  delete controller;
   google::ShutdownGoogleLogging();
   return ret;
 }
