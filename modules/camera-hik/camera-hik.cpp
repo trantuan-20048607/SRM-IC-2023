@@ -205,12 +205,14 @@ void camera::hik::HikCamera::ImageCallbackEx(unsigned char *image_data, MV_FRAME
   Frame frame;
   switch (frame_info->enPixelType) {
     case PixelType_Gvsp_BayerRG8: {
-      frame.image = cv::Mat(frame_info->nHeight, frame_info->nWidth, CV_8UC1, image_data).clone();
-      cv::cvtColor(frame.image, frame.image, cv::COLOR_BayerRG2RGB);
+      cv::Mat image(frame_info->nHeight, frame_info->nWidth, CV_8UC1, image_data);
+      cv::cvtColor(image, image, cv::COLOR_BayerRG2RGB);
+      frame.image = image.clone();
       break;
     }
     case PixelType_Gvsp_BGR8_Packed: {
-      frame.image = cv::Mat(frame_info->nHeight, frame_info->nWidth, CV_8UC3, image_data).clone();
+      cv::Mat image(frame_info->nHeight, frame_info->nWidth, CV_8UC3, image_data);
+      frame.image = image.clone();
       break;
     }
     default: {

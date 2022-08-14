@@ -5,7 +5,7 @@
 #include "common/attr-reader.h"
 
 namespace cli {
-class CliArgParser {
+class CliArgParser final {
  public:
   static CliArgParser &Instance();
 
@@ -13,6 +13,7 @@ class CliArgParser {
   attr_reader_ref(video_source_type_, VideoSourceType)
   attr_reader_val(record_, Record)
   attr_reader_val(serial_, Serial)
+  attr_reader_val(ui_, UI)
   void Parse(int argc, char **argv);
 
  private:
@@ -20,7 +21,7 @@ class CliArgParser {
   ~CliArgParser() = default;
 
   std::string controller_type_, video_source_type_;
-  bool record_{}, serial_{};
+  bool record_{}, serial_{}, ui_{};
 };
 }
 

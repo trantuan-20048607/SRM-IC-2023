@@ -197,10 +197,9 @@ bool camera::dh::DHCamera::IsConnected() {
     LOG(ERROR) << GetErrorInfo(status_code);
     return false;
   }
-  for (uint32_t i = 0; i < device_num; ++i) {
+  for (uint32_t i = 0; i < device_num; ++i)
     if (device_list[i].szSN == this->serial_number_)
       return true;
-  }
   return false;
 }
 
@@ -314,7 +313,7 @@ bool camera::dh::DHCamera::SetGainAuto(GX_GAIN_AUTO_ENTRY gx_gain_auto_entry) {
 std::string camera::dh::DHCamera::GetErrorInfo(GX_STATUS error_status_code) {
   size_t str_size = 0;
   if (GXGetLastError(&error_status_code, nullptr, &str_size) != GX_STATUS_SUCCESS) {
-    return "{?}{Unknown error}";
+    return "{!}{Memory full}";
   }
   char *error_info = new char[str_size];
   if (GXGetLastError(&error_status_code, error_info, &str_size) != GX_STATUS_SUCCESS) {
@@ -388,11 +387,10 @@ void camera::dh::DHCamera::DefaultCaptureCallback(GX_FRAME_CALLBACK_PARAM *frame
     LOG(ERROR) << GetErrorInfo(frame_callback->status);
     return;
   }
-  if (!self->Raw8Raw16ToRGB24(frame_callback))
-    return;
+  if (!self->Raw8Raw16ToRGB24(frame_callback)) return;
   Frame frame;
-  frame.image = cv::Mat(frame_callback->nHeight, frame_callback->nWidth,
-                        CV_8UC3, self->raw_8_to_rgb_24_cache_).clone();
+  cv::Mat image(frame_callback->nHeight, frame_callback->nWidth, CV_8UC3, self->raw_8_to_rgb_24_cache_);
+  frame.image = image.clone();
   frame.time_stamp = frame_callback->nTimestamp;
   for (auto p : self->callback_list_)
     if (p.first) (*p.first)(p.second, frame);

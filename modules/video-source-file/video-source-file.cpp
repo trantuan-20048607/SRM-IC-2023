@@ -4,10 +4,6 @@
 video_source::Registry<video_source::file::FileVideoSource>
     video_source::file::FileVideoSource::registry_("file");
 
-video_source::file::FileVideoSource::~FileVideoSource() {
-  if (video_.isOpened()) video_.release();
-}
-
 bool video_source::file::FileVideoSource::Initialize(const std::string &config_file) {
   cv::FileStorage video_init_config;
   video_init_config.open(config_file, cv::FileStorage::READ);
@@ -64,12 +60,13 @@ bool video_source::file::FileVideoSource::Initialize(const std::string &config_f
     distortion_mat_.release();
     return false;
   }
+  frame_rate_ = video_.get(cv::CAP_PROP_FPS);
   return true;
 }
 
 bool video_source::file::FileVideoSource::GetFrame(Frame &frame) {
   if (video_.read(frame.image)) {
-    time_stamp_ += uint64_t(1e9 / video_.get(cv::CAP_PROP_FPS));
+    time_stamp_ += uint64_t(1e9 / frame_rate_);
     frame.time_stamp = time_stamp_;
     for (auto p : callback_list_)
       if (p.first) (*p.first)(p.second, frame);
@@ -83,7 +80,6 @@ void video_source::file::FileVideoSource::RegisterFrameCallback(FrameCallback ca
 }
 
 void video_source::file::FileVideoSource::UnregisterFrameCallback(FrameCallback callback) {
-  callback_list_.erase(std::remove_if(
-      callback_list_.begin(), callback_list_.end(),
-      [callback](auto p) { return p.first == callback; }), callback_list_.end());
+  auto filter = [callback](auto p) { return p.first == callback; };
+  callback_list_.erase(std::remove_if(callback_list_.begin(), callback_list_.end(), filter), callback_list_.end());
 }

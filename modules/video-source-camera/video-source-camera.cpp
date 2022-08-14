@@ -5,12 +5,6 @@
 video_source::Registry<video_source::camera::CameraVideoSource>
     video_source::camera::CameraVideoSource::registry_("camera");
 
-video_source::camera::CameraVideoSource::~CameraVideoSource() {
-  if (!camera_) return;
-  delete camera_;
-  camera_ = nullptr;
-}
-
 bool video_source::camera::CameraVideoSource::Initialize(const std::string &config_file) {
   cv::FileStorage camera_init_config;
   camera_init_config.open(config_file, cv::FileStorage::READ);
@@ -48,14 +42,13 @@ bool video_source::camera::CameraVideoSource::Initialize(const std::string &conf
     LOG(ERROR) << "Camera type configuration not found.";
     return false;
   }
-  camera_ = ::camera::CreateCamera(camera_type);
+  camera_.reset(::camera::CreateCamera(camera_type));
   if (!camera_) {
     LOG(ERROR) << "Failed to create camera object of type " << camera_type << ".";
     return false;
   }
   auto clean = [&]() {
-    delete camera_;
-    camera_ = nullptr;
+    camera_.reset();
     intrinsic_mat_.release();
     distortion_mat_.release();
   };

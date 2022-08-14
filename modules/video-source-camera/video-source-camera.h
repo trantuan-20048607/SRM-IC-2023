@@ -8,7 +8,7 @@ namespace video_source::camera {
 class CameraVideoSource final : public VideoSource {
  public:
   CameraVideoSource() = default;
-  ~CameraVideoSource() final;
+  ~CameraVideoSource() final = default;
 
   bool Initialize(const std::string &config_file) final;
   bool GetFrame(Frame &frame) final;
@@ -16,7 +16,7 @@ class CameraVideoSource final : public VideoSource {
   void UnregisterFrameCallback(FrameCallback callback) final;
 
  private:
-  ::camera::Camera *camera_{};
+  std::unique_ptr<::camera::Camera> camera_{};
   static Registry<CameraVideoSource> registry_;
 };
 }

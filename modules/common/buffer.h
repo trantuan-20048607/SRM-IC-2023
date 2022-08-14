@@ -4,9 +4,9 @@
 #include <mutex>
 
 template<typename T, size_t N>
-class Buffer {
+class Buffer final {
  private:
-  T data_[N];
+  std::array<T, N> data_;
   size_t head_{}, tail_{};
   bool full_{};
   std::mutex lock_;
