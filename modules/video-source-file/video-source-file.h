@@ -8,7 +8,7 @@ namespace video_source::file {
 class FileVideoSource final : public VideoSource {
  public:
   FileVideoSource() = default;
-  ~FileVideoSource() final = default;
+  ~FileVideoSource() final;
 
   bool Initialize(const std::string &config_file) final;
   bool GetFrame(Frame &frame) final;

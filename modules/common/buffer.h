@@ -3,11 +3,11 @@
 
 #include <mutex>
 
-template<typename T, unsigned int N>
+template<typename T, size_t N>
 class Buffer {
  private:
   T data_[N];
-  unsigned int head_{}, tail_{};
+  size_t head_{}, tail_{};
   bool full_{};
   std::mutex lock_;
 
@@ -16,17 +16,17 @@ class Buffer {
   ~Buffer() = default;
 
   inline void Push(T &&obj) {
-    std::lock_guard<std::mutex> lock(lock_);
+    std::lock_guard<std::mutex> lock{lock_};
     data_[tail_] = std::forward<T>(obj);
     ++tail_ %= N;
     if (full_) ++head_ %= N;
-    if (tail_ == head_) full_ = true;
+    full_ = head_ == tail_;
   }
 
   inline bool Pop(T &obj) {
-    std::lock_guard<std::mutex> lock(lock_);
+    std::lock_guard<std::mutex> lock{lock_};
     if (head_ == tail_ && !full_) return false;
-    obj = std::move(data_[head_ % N]);
+    obj = std::move(data_[head_]);
     ++head_ %= N;
     full_ = false;
     return true;

@@ -1,10 +1,6 @@
 #include "cli-arg-parser/cli-arg-parser.h"
 #include "controller-base.h"
 
-controller::Controller *controller::CreateController(const std::string &type_name) {
-  return controller::Factory::Instance().Create(type_name);
-}
-
 bool controller::Controller::Initialize(const std::string &type_name) {
   video_source_.reset(video_source::CreateVideoSource(cli_argv.VideoSourceType()));
   if (!video_source_) {
@@ -22,14 +18,14 @@ bool controller::Controller::Initialize(const std::string &type_name) {
       serial_->Close();
       return false;
     }
-    video_source_->RegisterFrameCallback(&FrameCallback, this);
   }
+  video_source_->RegisterFrameCallback(&FrameCallback, this);
   // TODO INIT MATRIX
   return true;
 }
 
 std::function<void(void *obj, Frame &)> controller::Controller::FrameCallback = [](void *obj, Frame &frame) {
   auto self = (controller::Controller *) obj;
-  if (!self->serial_->ReadData(frame.receive_packet))
+  if (self->serial_ && !self->serial_->ReadData(frame.receive_packet))
     LOG(WARNING) << "Failed to read data from serial port in frame callback function.";
 };

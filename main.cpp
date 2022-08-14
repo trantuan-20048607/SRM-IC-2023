@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
   cli_argv.Parse(argc, argv);
   auto controller = controller::CreateController(cli_argv.ControllerType());
   if (!controller) return -1;
-  if (!controller->Initialize()) return 0;
+  if (!controller->Initialize()) return 1;
   std::signal(SIGINT, &SignalHandler);
   std::signal(SIGTERM, &SignalHandler);
   int ret = controller->Run();

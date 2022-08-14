@@ -7,7 +7,7 @@ namespace camera::dh {
 class DHCamera final : public Camera {
  public:
   DHCamera() = default;
-  ~DHCamera() final = default;
+  ~DHCamera() final;
 
   bool OpenCamera(const std::string &serial_number, const std::string &config_file) final;
   bool CloseCamera() final;

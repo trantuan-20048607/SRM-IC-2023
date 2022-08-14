@@ -6,6 +6,7 @@
 #include "video-source-base/video-source-base.h"
 
 void SignalHandler(int signal);
+enable_factory(controller, Controller)
 
 namespace controller {
 class Controller {
@@ -30,10 +31,6 @@ class Controller {
  private:
   static std::function<void(void *, Frame &)> FrameCallback;
 };
-
-using Factory = factory::Factory<Controller>;
-template<class T> using Registry = factory::RegistrySub<Controller, T>;
-Controller *CreateController(const std::string &type_name);
 }
 
 #endif  // SRM_IC_2023_MODULES_CONTROLLER_BASE_CONTROLLER_BASE_H_

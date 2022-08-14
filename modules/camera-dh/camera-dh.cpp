@@ -3,44 +3,49 @@
 #include <DxImageProc.h>
 #include "camera-dh.h"
 
-#define GX_OPEN_CAMERA_CHECK_STATUS(status_code)          \
-    if ((status_code) != GX_STATUS_SUCCESS) {             \
-        LOG(ERROR) << GetErrorInfo(status_code);          \
-        (status_code) = GXCloseDevice(device_);           \
-        if ((status_code) != GX_STATUS_SUCCESS)           \
-            LOG(ERROR) << GetErrorInfo(status_code);      \
-        device_ = nullptr;                                \
-        serial_number_ = "";                              \
-        if (!camera_count_) {                             \
-            (status_code) = GXCloseLib();                 \
-            if ((status_code) != GX_STATUS_SUCCESS)       \
-                LOG(ERROR) << GetErrorInfo(status_code);  \
-        }                                                 \
-        return false;                                     \
-    }
-
-#define GX_CHECK_STATUS(status_code)              \
-    if ((status_code) != GX_STATUS_SUCCESS) {     \
+#define GX_OPEN_CAMERA_CHECK_STATUS(status_code)  \
+  if ((status_code) != GX_STATUS_SUCCESS) {       \
+    LOG(ERROR) << GetErrorInfo(status_code);      \
+    (status_code) = GXCloseDevice(device_);       \
+    if ((status_code) != GX_STATUS_SUCCESS)       \
+      LOG(ERROR) << GetErrorInfo(status_code);    \
+    device_ = nullptr;                            \
+    serial_number_ = "";                          \
+    if (!camera_count_) {                         \
+      (status_code) = GXCloseLib();               \
+      if ((status_code) != GX_STATUS_SUCCESS)     \
         LOG(ERROR) << GetErrorInfo(status_code);  \
-        return false;                             \
-    }
+    }                                             \
+    return false;                                 \
+  }
 
-#define GX_START_STOP_STREAM_CHECK_STATUS_(status_code)  \
-    if ((status_code) != GX_STATUS_SUCCESS) {            \
-        if (raw_16_to_8_cache_) {                        \
-            delete[] raw_16_to_8_cache_;                 \
-            raw_16_to_8_cache_ = nullptr;                \
-        }                                                \
-        if (raw_8_to_rgb_24_cache_) {                    \
-            delete[] raw_8_to_rgb_24_cache_;             \
-            raw_8_to_rgb_24_cache_ = nullptr;            \
-        }                                                \
-        LOG(ERROR) << GetErrorInfo(status_code);         \
-        return false;                                    \
-    }
+#define GX_CHECK_STATUS(status_code)          \
+  if ((status_code) != GX_STATUS_SUCCESS) {   \
+    LOG(ERROR) << GetErrorInfo(status_code);  \
+    return false;                             \
+  }
+
+#define GX_START_STOP_STREAM_CHECK_STATUS(status_code)  \
+  if ((status_code) != GX_STATUS_SUCCESS) {             \
+    if (raw_16_to_8_cache_) {                           \
+      delete[] raw_16_to_8_cache_;                      \
+      raw_16_to_8_cache_ = nullptr;                     \
+    }                                                   \
+    if (raw_8_to_rgb_24_cache_) {                       \
+      delete[] raw_8_to_rgb_24_cache_;                  \
+      raw_8_to_rgb_24_cache_ = nullptr;                 \
+    }                                                   \
+    LOG(ERROR) << GetErrorInfo(status_code);            \
+    return false;                                       \
+  }
 
 uint16_t camera::dh::DHCamera::camera_count_ = 0;
 camera::Registry<camera::dh::DHCamera> camera::dh::DHCamera::registry_("DHCamera");
+
+camera::dh::DHCamera::~DHCamera() {
+  if (stream_running_) StopStream();
+  if (device_) CloseCamera();
+}
 
 bool camera::dh::DHCamera::OpenCamera(const std::string &serial_number, const std::string &config_file) {
   if (device_) return false;
@@ -152,7 +157,7 @@ bool camera::dh::DHCamera::StartStream() {
   raw_8_to_rgb_24_cache_ = new unsigned char[payload_size_ * 3];
   raw_16_to_8_cache_ = new unsigned char[payload_size_];
   GX_STATUS status_code = GXStreamOn(device_);
-  GX_START_STOP_STREAM_CHECK_STATUS_(status_code)
+  GX_START_STOP_STREAM_CHECK_STATUS(status_code)
   stream_running_ = true;
   LOG(INFO) << serial_number_ << "'s stream started.";
   return true;
@@ -163,7 +168,7 @@ bool camera::dh::DHCamera::StopStream() {
   if (!stream_running_) return false;
   stream_running_ = false;
   GX_STATUS status_code = GXStreamOff(device_);
-  GX_START_STOP_STREAM_CHECK_STATUS_(status_code)
+  GX_START_STOP_STREAM_CHECK_STATUS(status_code)
   if (raw_16_to_8_cache_ != nullptr) {
     delete[] raw_16_to_8_cache_;
     raw_16_to_8_cache_ = nullptr;
@@ -261,7 +266,6 @@ bool camera::dh::DHCamera::UnregisterCaptureCallback() {
 }
 
 bool camera::dh::DHCamera::SetExposureTimeDHImplementation(int64_t exposure_time) {
-  if (!device_) return false;
   GX_STATUS status_code;
   status_code = GXSetEnum(device_, GX_FLOAT_EXPOSURE_TIME, exposure_time);
   GX_CHECK_STATUS(status_code)
@@ -270,7 +274,6 @@ bool camera::dh::DHCamera::SetExposureTimeDHImplementation(int64_t exposure_time
 }
 
 bool camera::dh::DHCamera::SetExposureMode(GX_EXPOSURE_MODE_ENTRY gx_exposure_mode_entry) {
-  if (!device_) return false;
   GX_STATUS status_code;
   status_code = GXSetEnum(device_, GX_ENUM_EXPOSURE_MODE, gx_exposure_mode_entry);
   GX_CHECK_STATUS(status_code)
@@ -279,7 +282,6 @@ bool camera::dh::DHCamera::SetExposureMode(GX_EXPOSURE_MODE_ENTRY gx_exposure_mo
 }
 
 bool camera::dh::DHCamera::SetExposureTimeMode(GX_EXPOSURE_TIME_MODE_ENTRY gx_exposure_time_mode_entry) {
-  if (!device_) return false;
   GX_STATUS status_code;
   status_code = GXSetEnum(device_, GX_ENUM_EXPOSURE_TIME_MODE, gx_exposure_time_mode_entry);
   GX_CHECK_STATUS(status_code)
@@ -289,7 +291,6 @@ bool camera::dh::DHCamera::SetExposureTimeMode(GX_EXPOSURE_TIME_MODE_ENTRY gx_ex
 }
 
 bool camera::dh::DHCamera::SetGainValueDHImplementation(double gain) {
-  if (!device_) return false;
   GX_STATUS status_code;
   status_code = GXSetEnum(device_, GX_ENUM_GAIN_SELECTOR, GX_GAIN_SELECTOR_ALL);
   GX_CHECK_STATUS(status_code)
@@ -303,7 +304,6 @@ bool camera::dh::DHCamera::SetGainValueDHImplementation(double gain) {
 }
 
 bool camera::dh::DHCamera::SetGainAuto(GX_GAIN_AUTO_ENTRY gx_gain_auto_entry) {
-  if (!device_) return false;
   GX_STATUS status_code;
   status_code = GXSetEnum(device_, GX_ENUM_GAIN_AUTO, gx_gain_auto_entry);
   GX_CHECK_STATUS(status_code)

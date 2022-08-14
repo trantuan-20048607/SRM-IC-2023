@@ -7,7 +7,7 @@ namespace camera::hik {
 class HikCamera final : public Camera {
  public:
   HikCamera() = default;
-  ~HikCamera() final = default;
+  ~HikCamera() final;
 
   bool OpenCamera(const std::string &serial_number, const std::string &config_file) final;
   bool CloseCamera() final;

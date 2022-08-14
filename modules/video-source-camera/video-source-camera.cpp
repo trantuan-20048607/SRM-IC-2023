@@ -5,6 +5,12 @@
 video_source::Registry<video_source::camera::CameraVideoSource>
     video_source::camera::CameraVideoSource::registry_("camera");
 
+video_source::camera::CameraVideoSource::~CameraVideoSource() {
+  if (!camera_) return;
+  delete camera_;
+  camera_ = nullptr;
+}
+
 bool video_source::camera::CameraVideoSource::Initialize(const std::string &config_file) {
   cv::FileStorage camera_init_config;
   camera_init_config.open(config_file, cv::FileStorage::READ);
@@ -81,7 +87,6 @@ bool video_source::camera::CameraVideoSource::Initialize(const std::string &conf
   all_cams_config[camera_init_config["CAMERA"]]["GAIN_VALUE"] >> gain_value;
   if (gain_value > 0) camera_->SetGainValue(gain_value);
   if (!camera_->StartStream()) {
-    camera_->CloseCamera();
     clean();
     return false;
   }
@@ -89,13 +94,13 @@ bool video_source::camera::CameraVideoSource::Initialize(const std::string &conf
 }
 
 bool video_source::camera::CameraVideoSource::GetFrame(Frame &frame) {
-  return camera_->GetFrame(frame);
+  return camera_ != nullptr && camera_->GetFrame(frame);
 }
 
 void video_source::camera::CameraVideoSource::RegisterFrameCallback(FrameCallback callback, void *obj) {
-  camera_->RegisterFrameCallback(callback, obj);
+  if (camera_) camera_->RegisterFrameCallback(callback, obj);
 }
 
 void video_source::camera::CameraVideoSource::UnregisterFrameCallback(FrameCallback callback) {
-  camera_->UnregisterFrameCallback(callback);
+  if (camera_) camera_->UnregisterFrameCallback(callback);
 }

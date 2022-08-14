@@ -5,6 +5,8 @@
 #include "common/frame.h"
 #include "common/attr-reader.h"
 
+enable_factory(video_source, VideoSource)
+
 namespace video_source {
 class VideoSource {
  public:
@@ -23,10 +25,6 @@ class VideoSource {
   cv::Mat intrinsic_mat_;
   cv::Mat distortion_mat_;
 };
-
-using Factory = factory::Factory<VideoSource>;
-template<class T> using Registry = factory::RegistrySub<VideoSource, T>;
-VideoSource *CreateVideoSource(const std::string &type_name);
 }
 
 #endif  // SRM_IC_2023_MODULES_VIDEO_SOURCE_BASE_VIDEO_SOURCE_BASE_H_

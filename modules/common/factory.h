@@ -3,6 +3,16 @@
 
 #include <unordered_map>
 
+#define enable_factory(_namespace, _type)                           \
+namespace _namespace {                                              \
+class _type;                                                        \
+using Factory = factory::Factory<_type>;                            \
+template<class T> using Registry = factory::RegistrySub<_type, T>;  \
+inline _type *Create##_type(const std::string &type_name) {         \
+  return Factory::Instance().Create(type_name);                     \
+}                                                                   \
+}
+
 namespace factory {
 template<class B>
 class RegistryBase {

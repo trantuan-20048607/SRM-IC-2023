@@ -5,6 +5,11 @@
 
 camera::Registry<camera::hik::HikCamera> camera::hik::HikCamera::registry_("HikCamera");
 
+camera::hik::HikCamera::~HikCamera() {
+  if (stream_running_) StopStream();
+  if (device_) CloseCamera();
+}
+
 bool camera::hik::HikCamera::OpenCamera(const std::string &serial_number, const std::string &config_file) {
   if (device_) return false;
   MV_CC_DEVICE_INFO_LIST device_list;

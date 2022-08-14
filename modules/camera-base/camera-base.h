@@ -5,6 +5,8 @@
 #include "common/frame.h"
 #include "common/buffer.h"
 
+enable_factory(camera, Camera)
+
 namespace camera {
 class Camera {
  public:
@@ -32,10 +34,6 @@ class Camera {
   pthread_t daemon_thread_id_{};
   Buffer<Frame, 2> buffer_;
 };
-
-using Factory = factory::Factory<Camera>;
-template<class T> using Registry = factory::RegistrySub<Camera, T>;
-Camera *CreateCamera(const std::string &type_name);
 }
 
 #endif  // SRM_IC_2023_MODULES_CAMERA_BASE_CAMERA_BASE_H_

@@ -4,6 +4,10 @@
 video_source::Registry<video_source::file::FileVideoSource>
     video_source::file::FileVideoSource::registry_("file");
 
+video_source::file::FileVideoSource::~FileVideoSource() {
+  if (video_.isOpened()) video_.release();
+}
+
 bool video_source::file::FileVideoSource::Initialize(const std::string &config_file) {
   cv::FileStorage video_init_config;
   video_init_config.open(config_file, cv::FileStorage::READ);
@@ -62,6 +66,7 @@ bool video_source::file::FileVideoSource::Initialize(const std::string &config_f
   }
   return true;
 }
+
 bool video_source::file::FileVideoSource::GetFrame(Frame &frame) {
   if (video_.read(frame.image)) {
     time_stamp_ += uint64_t(1e9 / video_.get(cv::CAP_PROP_FPS));

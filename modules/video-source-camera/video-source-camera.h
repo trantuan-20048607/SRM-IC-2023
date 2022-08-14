@@ -8,7 +8,7 @@ namespace video_source::camera {
 class CameraVideoSource final : public VideoSource {
  public:
   CameraVideoSource() = default;
-  ~CameraVideoSource() final = default;
+  ~CameraVideoSource() final;
 
   bool Initialize(const std::string &config_file) final;
   bool GetFrame(Frame &frame) final;
