@@ -45,12 +45,8 @@ int controller::hero::HeroController::Run() {
     ss_fps << std::fixed << std::setprecision(0) << show_fps;
     if (!pause && show_warning) {
       if (cli_argv.Record()) {
-        struct timespec ts_rec_start{}, ts_rec_end{};
-        clock_gettime(CLOCK_REALTIME, &ts_rec_start);
         cv::Mat image = frame_.image.clone();
         video_writer_.Write(std::move(image));
-        clock_gettime(CLOCK_REALTIME, &ts_rec_end);
-        LOG(INFO) << "REC COST " << ts_rec_end.tv_nsec - ts_rec_start.tv_nsec << "ns";
         ++rec_frame_count;
       }
       if (cli_argv.UI()) {
@@ -109,7 +105,7 @@ int controller::hero::HeroController::Run() {
     check_key();
   }
 
-  auto_log_fps.join();
+  if (auto_log_fps.joinable()) auto_log_fps.join();
   cv::destroyAllWindows();
   return 0;
 }

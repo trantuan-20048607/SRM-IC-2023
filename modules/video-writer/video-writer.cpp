@@ -3,7 +3,8 @@
 
 video_writer::VideoWriter::~VideoWriter() {
   stop_flag_ = true;
-  thread_.join();
+  if (thread_.joinable()) thread_.join();
+  writer_.reset();
 }
 
 bool video_writer::VideoWriter::Open(const std::string &video_file, cv::Size frame_size, double fps) {
