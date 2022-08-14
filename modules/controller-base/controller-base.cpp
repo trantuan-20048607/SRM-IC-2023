@@ -28,15 +28,15 @@ bool controller::Controller::Initialize(const std::string &type_name) {
     time_t t = time(nullptr);
     char t_str[32];
     strftime(t_str, sizeof(t_str), "%Y-%m-%d-%H.%M.%S", localtime(&t));
-    std::string video_file = "../cache/" + type_name + "-" + t_str + ".avi";
-    video_writer_.Open("../cache/" + type_name + "-" + t_str + ".avi", {frame.image.cols, frame.image.rows});
+    std::string video_file = "../cache/" + type_name + "-" + t_str + ".mp4";
+    video_writer_.Open("../cache/" + type_name + "-" + t_str + ".mp4", {frame.image.cols, frame.image.rows});
   }
   // TODO INIT MATRIX
   return true;
 }
 
 std::function<void(void *obj, Frame &)> controller::Controller::FrameCallback = [](void *obj, Frame &frame) {
-  auto self = (controller::Controller *) obj;
+  auto self = static_cast<Controller *>(obj);
   if (self->serial_ && !self->serial_->ReadData(frame.receive_packet))
     LOG(WARNING) << "Failed to read data from serial port in frame callback function.";
 };

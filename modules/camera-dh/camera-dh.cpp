@@ -398,7 +398,7 @@ void camera::dh::DHCamera::DefaultCaptureCallback(GX_FRAME_CALLBACK_PARAM *frame
 }
 
 void *camera::dh::DHCamera::DaemonThreadFunction(void *obj) {
-  auto self = (DHCamera *) obj;
+  auto self = static_cast<DHCamera *>(obj);
   while (!self->stop_flag_) {
     sleep(1);
     if (!self->IsConnected()) {

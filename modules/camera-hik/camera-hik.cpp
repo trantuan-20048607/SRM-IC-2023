@@ -201,13 +201,13 @@ bool camera::hik::HikCamera::SetExposureTimeHikImplementation(float exposure_tim
 }
 
 void camera::hik::HikCamera::ImageCallbackEx(unsigned char *image_data, MV_FRAME_OUT_INFO_EX *frame_info, void *obj) {
-  auto self = (HikCamera *) obj;
+  auto self = static_cast<HikCamera *>(obj);
   Frame frame;
   switch (frame_info->enPixelType) {
     case PixelType_Gvsp_BayerRG8: {
       cv::Mat image(frame_info->nHeight, frame_info->nWidth, CV_8UC1, image_data);
-      cv::cvtColor(image, image, cv::COLOR_BayerRG2RGB);
       frame.image = image.clone();
+      cv::cvtColor(frame.image, frame.image, cv::COLOR_BayerRG2RGB);
       break;
     }
     case PixelType_Gvsp_BGR8_Packed: {

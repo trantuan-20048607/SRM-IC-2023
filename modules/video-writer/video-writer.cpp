@@ -1,8 +1,9 @@
 #include <glog/logging.h>
 #include "video-writer.h"
 
-void video_writer::VideoWriter::Write(const cv::Mat &frame) {
-  if (writer_) writer_->write(frame);
+video_writer::VideoWriter::~VideoWriter() {
+  stop_flag_ = true;
+  thread_.join();
 }
 
 bool video_writer::VideoWriter::Open(const std::string &video_file, cv::Size frame_size, double fps) {
@@ -12,6 +13,20 @@ bool video_writer::VideoWriter::Open(const std::string &video_file, cv::Size fra
     writer_.reset();
     return false;
   }
+  thread_ = std::thread(WritingThreadFunction, this);
   LOG(INFO) << "Opened video file " << video_file << ".";
   return true;
+}
+
+void video_writer::VideoWriter::Write(cv::Mat &&frame) {
+  if (writer_) buffer_.Push(std::move(frame));
+}
+
+void video_writer::VideoWriter::WritingThreadFunction(void *obj) {
+  auto self = static_cast<VideoWriter *>(obj);
+  while (!self->stop_flag_) {
+    cv::Mat frame;
+    if (self->buffer_.Pop(frame))
+      self->writer_->write(frame);
+  }
 }
