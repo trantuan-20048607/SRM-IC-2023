@@ -27,7 +27,7 @@
 #pragma warning( disable : 4305 )
 #endif
 
-#include "sse-math-base.h"
+#include "sse-math-basic.h"
 
 _PS_CONST(0, 0);
 _PS_CONST(2, 2);

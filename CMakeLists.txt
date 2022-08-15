@@ -44,8 +44,8 @@ endif ()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/modules)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rdparty)
-file(GLOB SRC ${CMAKE_CURRENT_SOURCE_DIR}/modules/*/*.cpp)
-file(GLOB THIRD_PARTY_SRC ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/*/*.cpp)
+file(GLOB SRC ${CMAKE_CURRENT_SOURCE_DIR}/modules/*/*.c*)
+file(GLOB THIRD_PARTY_SRC ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/*/*.c*)
 add_executable(${EXECUTABLE_NAME} main.cpp ${SRC} ${THIRD_PARTY_SRC})
 target_link_libraries(
         ${EXECUTABLE_NAME}

@@ -6,9 +6,9 @@
 #include "coordinate/coordinate.h"
 
 class Armor final {
+ public:
   enum class ArmorSize { BIG, SMALL };
 
- public:
   Armor(const std::array<cv::Point2f, 4> &corners,
         const coordinate::CoordSolver &coord_solver,
         const coordinate::EAngle &euler_angle,

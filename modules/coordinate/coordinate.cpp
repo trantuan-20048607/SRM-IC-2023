@@ -155,7 +155,7 @@ void coordinate::CoordSolver::SolvePnP(
     PnPInfo &pnp_info,
     const RMat &rm_imu) const {
   cv::Mat rv_cam_cv, ctv_cam_cv, rm_cam_cv;
-  cv::solvePnP(p3d_world, p2d_pic, tm_intrinsic_, tm_distortion_, ctv_cam_cv, rv_cam_cv);
+  cv::solvePnP(p3d_world, p2d_pic, tm_intrinsic_, tm_distortion_, rv_cam_cv, ctv_cam_cv);
   cv::Rodrigues(rv_cam_cv, rm_cam_cv);
   cv::cv2eigen(rm_cam_cv, pnp_info.rm_cam);
   cv::cv2eigen(ctv_cam_cv, pnp_info.ctv_cam);
