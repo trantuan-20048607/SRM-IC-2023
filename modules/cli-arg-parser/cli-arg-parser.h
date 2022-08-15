@@ -14,6 +14,7 @@ class CliArgParser final {
   attr_reader_val(record_, Record)
   attr_reader_val(serial_, Serial)
   attr_reader_val(ui_, UI)
+
   void Parse(int argc, char **argv);
 
  private:

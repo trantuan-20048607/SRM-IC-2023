@@ -4,6 +4,7 @@
 #include "serial/serial.h"
 #include "video-source-base/video-source-base.h"
 #include "video-writer/video-writer.h"
+#include "coordinate/coordinate.h"
 
 void SignalHandler(int signal);
 enable_factory(controller, Controller)
@@ -25,6 +26,7 @@ class Controller {
 
   std::unique_ptr<video_source::VideoSource> video_source_;
   std::unique_ptr<serial::Serial> serial_;
+  coordinate::CoordSolver coord_solver_;
   SendPacket send_packet_;
   ReceivePacket receive_packet_;
   Frame frame_;

@@ -215,15 +215,13 @@ void camera::hik::HikCamera::ImageCallbackEx(unsigned char *image_data, MV_FRAME
       frame.image = image.clone();
       break;
     }
-    default: {
-      LOG(WARNING) << "Unknown pixel type 0x" << std::hex << frame_info->enPixelType << " detected.";
-    }
+    default: LOG(WARNING) << "Unknown pixel type 0x" << std::hex << frame_info->enPixelType << " detected.";
   }
   frame.time_stamp = (uint64_t) frame_info->nDevTimeStampHigh;
   frame.time_stamp <<= 32;
   frame.time_stamp += frame_info->nDevTimeStampLow;
   for (auto p : self->callback_list_)
-    if (p.first) (*p.first)(p.second, frame);
+    (*p.first)(p.second, frame);
   self->buffer_.Push(std::move(frame));
 }
 

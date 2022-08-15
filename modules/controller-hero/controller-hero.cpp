@@ -5,7 +5,9 @@
 controller::Registry<controller::hero::HeroController> controller::hero::HeroController::registry_("hero");
 
 bool controller::hero::HeroController::Initialize() {
-  return controller::Controller::Initialize("hero");
+  bool ret = controller::Controller::Initialize("hero");
+  if (ret) LOG(INFO) << "Initialized hero controller.";
+  return ret;
 }
 
 int controller::hero::HeroController::Run() {
@@ -78,10 +80,10 @@ int controller::hero::HeroController::Run() {
     if (cli_argv.UI()) {
       auto key = cv::waitKey(1);
       if (key == 'q') {
-        LOG(INFO) << "QUIT";
+        LOG(INFO) << "CONTROL MSG: QUIT";
         exit_signal_ = true;
       } else if (key == 'p') {
-        LOG(INFO) << (pause ? "RESUME" : "PAUSE");
+        LOG(INFO) << "CONTROL MSG: " << (pause ? "RESUME" : "PAUSE");
         pause = !pause;
       }
     }
@@ -89,11 +91,12 @@ int controller::hero::HeroController::Run() {
 
   std::thread auto_log_fps([&]() {
     while (!exit_signal_) {
+      usleep(250000);
       if (!pause && show_warning) {
         show_fps = fps;
         LOG(INFO) << "FPS: " << fps;
       }
-      sleep(1);
+      usleep(250000);
     }
   });
 
@@ -105,6 +108,7 @@ int controller::hero::HeroController::Run() {
     check_key();
   }
 
+  LOG(INFO) << "Main loop finished. Waiting for background tasks to exit.";
   if (auto_log_fps.joinable()) auto_log_fps.join();
   cv::destroyAllWindows();
   return 0;

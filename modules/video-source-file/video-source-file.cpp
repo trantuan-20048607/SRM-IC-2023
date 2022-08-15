@@ -72,7 +72,7 @@ bool video_source::file::FileVideoSource::GetFrame(Frame &frame) {
     time_stamp_ += uint64_t(1e9 / frame_rate_);
     frame.time_stamp = time_stamp_;
     for (auto p : callback_list_)
-      if (p.first) (*p.first)(p.second, frame);
+      (*p.first)(p.second, frame);
     return true;
   } else
     return false;

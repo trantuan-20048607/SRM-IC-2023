@@ -12,6 +12,12 @@ bool controller::Controller::Initialize(const std::string &type_name) {
     video_source_.reset();
     return false;
   }
+  if (!coord_solver_.Initialize("../config/" + type_name + "/coord-init.yaml",
+                                video_source_->IntrinsicMat(), video_source_->DistortionMat())) {
+    LOG(ERROR) << "Failed to initialize coordinate solver.";
+    video_source_.reset();
+    return false;
+  }
   if (cli_argv.Serial()) {
     serial_ = std::make_unique<serial::Serial>();
     if (!serial_->Open()) {
@@ -31,7 +37,7 @@ bool controller::Controller::Initialize(const std::string &type_name) {
     std::string video_file = "../cache/" + type_name + "-" + t_str + ".mp4";
     video_writer_.Open("../cache/" + type_name + "-" + t_str + ".mp4", {frame.image.cols, frame.image.rows});
   }
-  // TODO INIT MATRIX
+  LOG(INFO) << "Initialized base environment of " << type_name << " controller.";
   return true;
 }
 

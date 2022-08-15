@@ -393,7 +393,7 @@ void camera::dh::DHCamera::DefaultCaptureCallback(GX_FRAME_CALLBACK_PARAM *frame
   frame.image = image.clone();
   frame.time_stamp = frame_callback->nTimestamp;
   for (auto p : self->callback_list_)
-    if (p.first) (*p.first)(p.second, frame);
+    (*p.first)(p.second, frame);
   self->buffer_.Push(std::move(frame));
 }
 

@@ -9,12 +9,7 @@ struct ReceivePacket {
 struct SendPacket {
 };
 
-inline std::ostream &operator<<(std::ostream &str, const ReceivePacket &packet) {
-  return str;
-}
-
-inline std::ostream &operator<<(std::ostream &str, const SendPacket &packet) {
-  return str;
-}
+std::ostream &operator<<(std::ostream &str, const ReceivePacket &packet);
+std::ostream &operator<<(std::ostream &str, const SendPacket &packet);
 
 #endif  // SRM_IC_2023_MODULES_COMMON_PACKET_H_

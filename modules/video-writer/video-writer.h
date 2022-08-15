@@ -19,7 +19,7 @@ class VideoWriter final {
   static void WritingThreadFunction(void *obj);
 
   std::unique_ptr<cv::VideoWriter> writer_;
-  Buffer<cv::Mat, 4096> buffer_;
+  Buffer<cv::Mat, 512> buffer_;
   std::thread thread_;
   std::atomic_bool stop_flag_{};
 };
