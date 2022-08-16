@@ -9,7 +9,6 @@
 enable_factory(camera, Camera)
 
 namespace camera {
-/// 相机抽象接口
 class Camera {
  public:
   Camera() = default;

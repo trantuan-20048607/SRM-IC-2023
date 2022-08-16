@@ -91,12 +91,11 @@ int controller::hero::HeroController::Run() {
 
   std::thread auto_log_fps([&]() {
     while (!exit_signal_) {
-      usleep(250000);
       if (!pause && show_warning) {
         show_fps = fps;
         LOG(INFO) << "FPS: " << fps;
       }
-      usleep(250000);
+      sleep(1);
     }
   });
 
