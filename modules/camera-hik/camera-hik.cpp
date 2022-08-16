@@ -64,7 +64,7 @@ bool camera::hik::HikCamera::OpenCamera(const std::string &serial_number, const 
       LOG(ERROR) << "Failed to destroy device handle with error " << "0x" << std::hex << status_code << ".";
     return false;
   }
-  if (!ImportConfigurationFile(config_file)) {
+  if (!config_file.empty() && !ImportConfigurationFile(config_file)) {
     status_code = MV_CC_CloseDevice(device_);
     if (MV_OK != status_code)
       LOG(ERROR) << "Failed to close device with error " << "0x" << std::hex << status_code << ".";

@@ -92,7 +92,7 @@ bool camera::dh::DHCamera::OpenCamera(const std::string &serial_number, const st
   }
   status_code = GXGetInt(device_, GX_INT_PAYLOAD_SIZE, &payload_size_);
   GX_OPEN_CAMERA_CHECK_STATUS(status_code)
-  if (!ImportConfigurationFile(config_file)) {
+  if (!config_file.empty() && !ImportConfigurationFile(config_file)) {
     status_code = GXCloseDevice(device_);
     if (status_code != GX_STATUS_SUCCESS)
       LOG(ERROR) << GetErrorInfo(status_code);

@@ -2,10 +2,9 @@
 #include <Eigen/Dense>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core/eigen.hpp>
-#include <utility>
 #include "coordinate.h"
 
-#define USE_SIMD
+#define USE_SIMD  ///< 使用 SIMD 加速数学计算，取消定义则使用标准数学计算
 
 #ifdef USE_SIMD
 #include "simd/simd.h"
@@ -150,12 +149,13 @@ bool coordinate::CoordSolver::Initialize(const std::string &config_file, TMat tm
 }
 
 void coordinate::CoordSolver::SolvePnP(
-    const std::vector<Point3D> &p3d_world,
-    const std::vector<Point2D> &p2d_pic,
-    PnPInfo &pnp_info,
-    const RMat &rm_imu) const {
+    const std::array<Point3D, 4> &p3d_world,
+    const std::array<Point2D, 4> &p2d_pic,
+    const RMat &rm_imu,
+    PnPInfo &pnp_info) const {
   cv::Mat rv_cam_cv, ctv_cam_cv, rm_cam_cv;
-  cv::solvePnP(p3d_world, p2d_pic, tm_intrinsic_, tm_distortion_, rv_cam_cv, ctv_cam_cv);
+  cv::solvePnP(p3d_world, p2d_pic, tm_intrinsic_, tm_distortion_, rv_cam_cv, ctv_cam_cv,
+               false, cv::SOLVEPNP_AP3P);
   cv::Rodrigues(rv_cam_cv, rm_cam_cv);
   cv::cv2eigen(rm_cam_cv, pnp_info.rm_cam);
   cv::cv2eigen(ctv_cam_cv, pnp_info.ctv_cam);

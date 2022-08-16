@@ -2,10 +2,12 @@
 #include "video-writer.h"
 
 video_writer::VideoWriter::~VideoWriter() {
-  stop_flag_ = true;
-  LOG(INFO) << "Waiting for writing video...";
-  if (thread_.joinable()) thread_.join();
-  LOG(INFO) << "Writing video finished.";
+  if (writer_) {
+    stop_flag_ = true;
+    LOG(INFO) << "Waiting for writing video...";
+    if (thread_.joinable()) thread_.join();
+    LOG(INFO) << "Writing video finished.";
+  }
 }
 
 bool video_writer::VideoWriter::Open(const std::string &video_file, cv::Size frame_size, double fps) {

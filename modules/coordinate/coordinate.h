@@ -5,42 +5,104 @@
 #include <opencv2/core/mat.hpp>
 
 namespace coordinate {
-using Point2D = cv::Point2f;       // point on picture, with prefix p2d_
-using Point3D = cv::Point3d;       // point in the world, with prefix p3d_
-using RMat = Eigen::Matrix3d;      // rotation matrix, with prefix rm_
-using TMat = cv::Mat;              // transformation matrix, with prefix tm_
-using ExtTMat = Eigen::Matrix4d;   // extended transformation matrix (4x4), with prefix etm_
-using CTVec = Eigen::Vector3d;     // cartesian translation vector (x, y, z -> x+: right, y+: below, z+: front), with prefix ctv_
-using STVec = Eigen::Vector3d;     // spherical translation vector (y, p, d -> y+: right, p+: above, d+: any), with prefix stv_
-using ExtCTVec = Eigen::Vector4d;  // extended translation vector (x, y, z, 1), with prefix ectv_
-using EAngle = Eigen::Vector3d;    // euler angle (z, y, x -> roll+: right, yaw+: right, pitch+: above), with prefix ea_
+using Point2D = cv::Point2f;       ///< 2D 点坐标，变量名标记 p2d_ 前缀
+using Point3D = cv::Point3d;       ///< 3D 点坐标，变量名标记 p3d_ 前缀
+using RMat = Eigen::Matrix3d;      ///< 3x3 旋转矩阵，变量名标记 rm_ 前缀
+using TMat = cv::Mat;              ///< 变换矩阵，变量名标记 tm_ 前缀
+using ExtTMat = Eigen::Matrix4d;   ///< 4x4 旋转、位移变换矩阵，变量名标记 etm_ 前缀
+using CTVec = Eigen::Vector3d;     ///< 3x1 直角坐标位移向量（以 (x, y, z) 表示，正方向依次为：右移、下移、前移）, 变量名标记 ctv_ 前缀
+using STVec = Eigen::Vector3d;     ///< 3x1 球坐标位移向量（以 (yaw, pitch, distance) 表示，正方向依次为：右偏、上仰）, 变量名标记 stv_ 前缀
+using ExtCTVec = Eigen::Vector4d;  ///< 4x1 扩展直角坐标位移向量 (x, y, z, 1), 变量名标记 ectv_ 前缀
+using EAngle = Eigen::Vector3d;    ///< 3x1 欧拉角（以 (roll, yaw, pitch) 表示，正方向依次为：右滚、右偏、上仰），变量名标记 ea_ 前缀
 
 struct PnPInfo {
-  CTVec ctv_cam, ctv_world;
-  STVec stv_cam, stv_world;
-  RMat rm_cam;
-  EAngle ea_cam;
+  CTVec ctv_cam;    ///< 目标中心点的相机坐标系直角坐标
+  CTVec ctv_world;  ///< 目标中心点的世界坐标系直角坐标
+  STVec stv_cam;    ///< 目标中心点的相机坐标系球坐标
+  STVec stv_world;  ///< 目标中心点的世界坐标系球坐标
+  RMat rm_cam;      ///< 目标自身相对相机的旋转矩阵
+  EAngle ea_cam;    ///< 目标自身相对相机的欧拉角
 };
 
 class CoordSolver {
  private:
-  TMat tm_intrinsic_, tm_distortion_;
-  ExtTMat etm_ic_, etm_ci_;
-  CTVec ctv_iw_;
+  TMat tm_intrinsic_;   ///< 相机内参
+  TMat tm_distortion_;  ///< 相机外参
+  ExtTMat etm_ic_;      ///< 陀螺仪坐标系转换到相机坐标系
+  ExtTMat etm_ci_;      ///< 相机坐标系转换到陀螺仪坐标系
+  CTVec ctv_iw_;        ///< 陀螺仪相对世界坐标系原点的位移
 
  public:
+  /**
+   * @brief 将旋转矩阵转换为欧拉角
+   * @param [in] rm 旋转矩阵
+   * @return 转换后的欧拉角
+   */
   static EAngle RMatToEAngle(const RMat &rm);
+
+  /**
+   * @brief 将欧拉角转换为旋转矩阵
+   * @param [in] ea 欧拉角
+   * @return 转换后的旋转矩阵
+   */
   static RMat EAngleToRMat(const EAngle &ea);
+
+  /**
+   * @brief 将直角坐标转换为球坐标
+   * @param [in] ctv 直角坐标
+   * @return 转换后的球坐标
+   */
   static STVec CTVecToSTVec(const CTVec &ctv);
+
+  /**
+   * @brief 将球坐标转换为直角坐标
+   * @param [in] stv 球坐标
+   * @return 转换后的直角坐标
+   */
   static CTVec STVecToCTVec(const STVec &stv);
 
+  /**
+   * @brief 初始化坐标系参数
+   * @param [in] config_file 配置文件名
+   * @param tm_intrinsic 相机内参
+   * @param tm_distortion 相机外参
+   * @return 初始化过程是否正常完成
+   */
   bool Initialize(const std::string &config_file, TMat tm_intrinsic, TMat tm_distortion);
-  void SolvePnP(const std::vector<Point3D> &p3d_world,
-                const std::vector<Point2D> &p2d_pic,
-                PnPInfo &pnp_info,
-                const RMat &rm_imu) const;
+
+  /**
+   * @brief 解算 PnP 数据
+   * @param [in] p3d_world 参考世界坐标
+   * @param [in] p2d_pic 图像点位
+   * @param [in] rm_imu 当前姿态
+   * @param [out] pnp_info 输出信息
+   */
+  void SolvePnP(const std::array<Point3D, 4> &p3d_world,
+                const std::array<Point2D, 4> &p2d_pic,
+                const RMat &rm_imu,
+                PnPInfo &pnp_info) const;
+
+  /**
+   * @brief 将相机坐标系坐标转换为世界坐标系坐标
+   * @param [in] ctv_cam 相机坐标系坐标
+   * @param [in] rm_imu 当前云台姿态
+   * @return 世界坐标系坐标
+   */
   CTVec CamToWorld(const CTVec &ctv_cam, const RMat &rm_imu) const;
+
+  /**
+   * @brief 将世界坐标系坐标转换为相机坐标系坐标
+   * @param [in] ctv_world 世界坐标系坐标
+   * @param [in] rm_imu 当前云台姿态
+   * @return 相机坐标系坐标
+   */
   CTVec WorldToCam(const CTVec &ctv_world, const RMat &rm_imu) const;
+
+  /**
+   * @brief 将相机坐标系坐标投影到图像坐标系中
+   * @param [in] ctv_cam 相机坐标系坐标
+   * @return 图像坐标系点位
+   */
   Point2D CamToPic(const CTVec &ctv_cam) const;
 };
 }
