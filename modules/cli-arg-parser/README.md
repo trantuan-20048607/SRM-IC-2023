@@ -1,4 +1,4 @@
-# CLIArgParser 模块使用说明
+# CLIArgParser 模块说明
 
 ## 简介
 
@@ -77,7 +77,7 @@ void cli::CliArgParser::Parse(int argc, char **argv) {
 引入`cli-arg-parser.h`，对全局变量`cli_argv`调用对应函数即可。
 
 ```c++
-#include "cli-arg-parser.h"
+#include "cli-arg-parser/cli-arg-parser.h"
 int main() {
   // cli_argv.Parse(argc, argv);
   std::cout << cli_argv.string_var << std::endl;

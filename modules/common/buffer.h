@@ -15,6 +15,10 @@ class Buffer final {
   Buffer() = default;
   ~Buffer() = default;
 
+  /**
+   * @brief 放入数据，队列已满时将覆盖旧数据
+   * @param [in] obj 待移动数据
+   */
   inline void Push(T &&obj) {
     std::lock_guard<std::mutex> lock{lock_};
     data_[tail_] = std::forward<T>(obj);
@@ -23,6 +27,11 @@ class Buffer final {
     full_ = head_ == tail_;
   }
 
+  /**
+   * @brief 取出数据
+   * @param [out] obj 数据目标位置
+   * @return 队列是否为空
+   */
   inline bool Pop(T &obj) {
     std::lock_guard<std::mutex> lock{lock_};
     if (head_ == tail_ && !full_) return false;

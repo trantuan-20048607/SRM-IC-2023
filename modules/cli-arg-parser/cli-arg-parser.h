@@ -15,6 +15,11 @@ class CliArgParser final {
   attr_reader_val(serial_, Serial)
   attr_reader_val(ui_, UI)
 
+  /**
+   * @brief 解析命令行参数
+   * @param argc 命令行参数 ARGC，从主函数中获取
+   * @param argv 命令行参数 ARGV，从主函数中获取
+   */
   void Parse(int argc, char **argv);
 
  private:
@@ -26,6 +31,6 @@ class CliArgParser final {
 };
 }
 
-extern cli::CliArgParser &cli_argv;
+extern cli::CliArgParser &cli_argv;  ///< 记录命令行参数的全局变量
 
 #endif  // SRM_IC_2023_MODULES_CLI_ARG_PARSER_CLI_ARG_PARSER_H_
