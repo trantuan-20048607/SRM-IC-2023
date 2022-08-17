@@ -2,6 +2,7 @@
 #define SRM_IC_2023_MODULES_COMMON_BUFFER_H_
 
 #include <mutex>
+#include "syntactic-sugar.h"
 
 /**
  * @brief 带锁循环队列，自动丢弃旧数据
