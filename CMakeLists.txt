@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.12)
 
 project(SRM-IC-2023)
-set(EXECUTABLE_NAME srm-ic-2023)
-set(MVS_PATH /opt/MVS)
-set(DH_CAM_PATH /opt/Galaxy_camera)
+set(EXECUTABLE_NAME srm-ic-2023)  # 可执行文件名
+
+set(MVS_PATH /opt/MVS)  # MVS 相机驱动目录
+set(DH_CAM_PATH /opt/Galaxy_camera)  # Galaxy 相机驱动目录
 
 set(CMAKE_CXX_STANDARD 20)
 if (CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "x86_64")
@@ -45,8 +46,7 @@ endif ()
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/modules)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rdparty)
 file(GLOB SRC ${CMAKE_CURRENT_SOURCE_DIR}/modules/*/*.c*)
-file(GLOB THIRD_PARTY_SRC ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/*/*.c*)
-add_executable(${EXECUTABLE_NAME} main.cpp ${SRC} ${THIRD_PARTY_SRC})
+add_executable(${EXECUTABLE_NAME} main.cpp ${SRC})
 target_link_libraries(
         ${EXECUTABLE_NAME}
         ${OpenCV_LIBS}
