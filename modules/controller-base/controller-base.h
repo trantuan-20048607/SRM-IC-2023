@@ -39,8 +39,6 @@ class Controller {
   std::unique_ptr<video_source::VideoSource> video_source_;  ///< 视频源
   std::unique_ptr<serial::Serial> serial_;                   ///< 串口
   coordinate::CoordSolver coord_solver_;                     ///< 坐标求解器
-  SendPacket send_packet_{};                                 ///< 串口接收数据包
-  ReceivePacket receive_packet_{};                           ///< 串口发送数据包
   Frame frame_;                                              ///< 帧数据
   video_writer::VideoWriter video_writer_;                   ///< 视频写入接口
 
