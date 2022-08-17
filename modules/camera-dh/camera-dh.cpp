@@ -47,7 +47,7 @@ camera::dh::DHCamera::~DHCamera() {
   if (device_) CloseCamera();
 }
 
-bool camera::dh::DHCamera::OpenCamera(const std::string &serial_number, const std::string &config_file) {
+bool camera::dh::DHCamera::OpenCamera(std::string REF_IN serial_number, std::string REF_IN config_file) {
   if (device_) return false;
   if (!camera_count_ && GXInitLib() != GX_STATUS_SUCCESS)
     throw std::runtime_error("GX libraries not found.");
@@ -203,12 +203,12 @@ bool camera::dh::DHCamera::IsConnected() {
   return false;
 }
 
-bool camera::dh::DHCamera::GetFrame(Frame &frame) {
+bool camera::dh::DHCamera::GetFrame(Frame REF_OUT frame) {
   if (!device_) return false;
   return buffer_.Pop(frame);
 }
 
-bool camera::dh::DHCamera::ExportConfigurationFile(const std::string &config_file) {
+bool camera::dh::DHCamera::ExportConfigurationFile(std::string REF_IN config_file) {
   if (!device_) return false;
   GX_STATUS status_code = GXExportConfigFile(device_, config_file.c_str());
   GX_CHECK_STATUS(status_code)
@@ -216,7 +216,7 @@ bool camera::dh::DHCamera::ExportConfigurationFile(const std::string &config_fil
   return true;
 }
 
-bool camera::dh::DHCamera::ImportConfigurationFile(const std::string &config_file) {
+bool camera::dh::DHCamera::ImportConfigurationFile(std::string REF_IN config_file) {
   if (!device_) return false;
   GX_STATUS status_code = GXImportConfigFile(device_, config_file.c_str());
   GX_CHECK_STATUS(status_code)
@@ -244,6 +244,75 @@ bool camera::dh::DHCamera::SetGainValue(float gain_value) {
     return false;
   }
   return SetGainValueDHImplementation(static_cast<double>(gain_value));
+}
+
+void camera::dh::DHCamera::DefaultCaptureCallback(GX_FRAME_CALLBACK_PARAM *frame_callback) {
+  auto *self = (DHCamera *) frame_callback->pUserParam;
+  if (frame_callback->status != GX_STATUS_SUCCESS) {
+    LOG(ERROR) << GetErrorInfo(frame_callback->status);
+    return;
+  }
+  if (!self->Raw8Raw16ToRGB24(frame_callback)) return;
+  Frame frame;
+  cv::Mat image(frame_callback->nHeight, frame_callback->nWidth, CV_8UC3, self->raw_8_to_rgb_24_cache_);
+  frame.image = image.clone();
+  frame.time_stamp = frame_callback->nTimestamp;
+  for (auto p : self->callback_list_)
+    (*p.first)(p.second, frame);
+  self->buffer_.Push(std::move(frame));
+}
+
+void *camera::dh::DHCamera::DaemonThreadFunction(void *obj) {
+  auto self = static_cast<DHCamera *>(obj);
+  while (!self->stop_flag_) {
+    sleep(1);
+    if (!self->IsConnected()) {
+      LOG(ERROR) << self->serial_number_ << " is disconnected unexpectedly.";
+      LOG(INFO) << "Preparing for reconnection...";
+      if (self->stream_running_) {
+        GXStreamOff(self->device_);
+        if (self->raw_16_to_8_cache_) {
+          delete[] self->raw_16_to_8_cache_;
+          self->raw_16_to_8_cache_ = nullptr;
+        }
+        if (self->raw_8_to_rgb_24_cache_) {
+          delete[] self->raw_8_to_rgb_24_cache_;
+          self->raw_8_to_rgb_24_cache_ = nullptr;
+        }
+      }
+      self->UnregisterCaptureCallback();
+      --camera_count_;
+      GXCloseDevice(self->device_);
+      self->device_ = nullptr;
+      self->payload_size_ = 0;
+      self->color_filter_ = GX_COLOR_FILTER_NONE;
+      self->daemon_thread_id_ = 0;
+      if (!camera_count_)
+        GXCloseLib();
+      while (!self->OpenCamera(self->serial_number_, "../cache/" + self->serial_number_ + ".txt"))
+        sleep(1);
+      if (self->stream_running_) {
+        self->raw_8_to_rgb_24_cache_ = new unsigned char[self->payload_size_ * 3];
+        self->raw_16_to_8_cache_ = new unsigned char[self->payload_size_];
+        GX_STATUS status_code = GXStreamOn(self->device_);
+        if (status_code != GX_STATUS_SUCCESS) {
+          LOG(ERROR) << GetErrorInfo(status_code);
+          GXStreamOff(self->device_);
+          if (self->raw_16_to_8_cache_) {
+            delete[] self->raw_16_to_8_cache_;
+            self->raw_16_to_8_cache_ = nullptr;
+          }
+          if (self->raw_8_to_rgb_24_cache_) {
+            delete[] self->raw_8_to_rgb_24_cache_;
+            self->raw_8_to_rgb_24_cache_ = nullptr;
+          }
+          self->stream_running_ = false;
+        }
+      }
+      LOG(INFO) << self->serial_number_ << " is successfully reconnected.";
+    }
+  }
+  return nullptr;
 }
 
 bool camera::dh::DHCamera::RegisterCaptureCallback(GXCaptureCallBack callback) {
@@ -379,73 +448,4 @@ bool camera::dh::DHCamera::Raw8Raw16ToRGB24(GX_FRAME_CALLBACK_PARAM *frame_callb
     }
   }
   return true;
-}
-
-void camera::dh::DHCamera::DefaultCaptureCallback(GX_FRAME_CALLBACK_PARAM *frame_callback) {
-  auto *self = (DHCamera *) frame_callback->pUserParam;
-  if (frame_callback->status != GX_STATUS_SUCCESS) {
-    LOG(ERROR) << GetErrorInfo(frame_callback->status);
-    return;
-  }
-  if (!self->Raw8Raw16ToRGB24(frame_callback)) return;
-  Frame frame;
-  cv::Mat image(frame_callback->nHeight, frame_callback->nWidth, CV_8UC3, self->raw_8_to_rgb_24_cache_);
-  frame.image = image.clone();
-  frame.time_stamp = frame_callback->nTimestamp;
-  for (auto p : self->callback_list_)
-    (*p.first)(p.second, frame);
-  self->buffer_.Push(std::move(frame));
-}
-
-void *camera::dh::DHCamera::DaemonThreadFunction(void *obj) {
-  auto self = static_cast<DHCamera *>(obj);
-  while (!self->stop_flag_) {
-    sleep(1);
-    if (!self->IsConnected()) {
-      LOG(ERROR) << self->serial_number_ << " is disconnected unexpectedly.";
-      LOG(INFO) << "Preparing for reconnection...";
-      if (self->stream_running_) {
-        GXStreamOff(self->device_);
-        if (self->raw_16_to_8_cache_) {
-          delete[] self->raw_16_to_8_cache_;
-          self->raw_16_to_8_cache_ = nullptr;
-        }
-        if (self->raw_8_to_rgb_24_cache_) {
-          delete[] self->raw_8_to_rgb_24_cache_;
-          self->raw_8_to_rgb_24_cache_ = nullptr;
-        }
-      }
-      self->UnregisterCaptureCallback();
-      --camera_count_;
-      GXCloseDevice(self->device_);
-      self->device_ = nullptr;
-      self->payload_size_ = 0;
-      self->color_filter_ = GX_COLOR_FILTER_NONE;
-      self->daemon_thread_id_ = 0;
-      if (!camera_count_)
-        GXCloseLib();
-      while (!self->OpenCamera(self->serial_number_, "../cache/" + self->serial_number_ + ".txt"))
-        sleep(1);
-      if (self->stream_running_) {
-        self->raw_8_to_rgb_24_cache_ = new unsigned char[self->payload_size_ * 3];
-        self->raw_16_to_8_cache_ = new unsigned char[self->payload_size_];
-        GX_STATUS status_code = GXStreamOn(self->device_);
-        if (status_code != GX_STATUS_SUCCESS) {
-          LOG(ERROR) << GetErrorInfo(status_code);
-          GXStreamOff(self->device_);
-          if (self->raw_16_to_8_cache_) {
-            delete[] self->raw_16_to_8_cache_;
-            self->raw_16_to_8_cache_ = nullptr;
-          }
-          if (self->raw_8_to_rgb_24_cache_) {
-            delete[] self->raw_8_to_rgb_24_cache_;
-            self->raw_8_to_rgb_24_cache_ = nullptr;
-          }
-          self->stream_running_ = false;
-        }
-      }
-      LOG(INFO) << self->serial_number_ << " is successfully reconnected.";
-    }
-  }
-  return nullptr;
 }

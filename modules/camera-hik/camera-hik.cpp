@@ -1,6 +1,6 @@
 #include <glog/logging.h>
-#include <MvCameraControl.h>
 #include <opencv2/imgproc.hpp>
+#include <MvCameraControl.h>
 #include "camera-hik.h"
 
 camera::Registry<camera::hik::HikCamera> camera::hik::HikCamera::registry_("HikCamera");
@@ -10,7 +10,7 @@ camera::hik::HikCamera::~HikCamera() {
   if (device_) CloseCamera();
 }
 
-bool camera::hik::HikCamera::OpenCamera(const std::string &serial_number, const std::string &config_file) {
+bool camera::hik::HikCamera::OpenCamera(std::string REF_IN serial_number, std::string REF_IN config_file) {
   if (device_) return false;
   MV_CC_DEVICE_INFO_LIST device_list;
   memset(&device_list, 0, sizeof(MV_CC_DEVICE_INFO_LIST));
@@ -142,7 +142,7 @@ bool camera::hik::HikCamera::StopStream() {
   return true;
 }
 
-bool camera::hik::HikCamera::GetFrame(Frame &frame) {
+bool camera::hik::HikCamera::GetFrame(Frame REF_OUT frame) {
   if (!device_) return false;
   return buffer_.Pop(frame);
 }
@@ -152,7 +152,7 @@ bool camera::hik::HikCamera::IsConnected() {
   return MV_CC_IsDeviceConnected(device_);
 }
 
-bool camera::hik::HikCamera::ImportConfigurationFile(const std::string &config_file) {
+bool camera::hik::HikCamera::ImportConfigurationFile(std::string REF_IN config_file) {
   if (!device_) return false;
   auto status_code = MV_CC_FeatureLoad(device_, config_file.c_str());
   if (status_code != MV_OK) {
@@ -164,7 +164,7 @@ bool camera::hik::HikCamera::ImportConfigurationFile(const std::string &config_f
   return true;
 }
 
-bool camera::hik::HikCamera::ExportConfigurationFile(const std::string &config_file) {
+bool camera::hik::HikCamera::ExportConfigurationFile(std::string REF_IN config_file) {
   if (!device_) return false;
   auto status_code = MV_CC_FeatureSave(device_, config_file.c_str());
   if (status_code != MV_OK) {
@@ -188,15 +188,6 @@ bool camera::hik::HikCamera::SetGainValue(float gain) {
     return false;
   }
   DLOG(INFO) << "Set " << serial_number_ << "'s gain to " << std::to_string(gain) << ".";
-  return true;
-}
-
-bool camera::hik::HikCamera::SetExposureTimeHikImplementation(float exposure_time) {
-  if (MV_CC_SetFloatValue(device_, "ExposureTime", exposure_time) != MV_OK) {
-    LOG(ERROR) << "Failed to set " << serial_number_ << "'s exposure time to " << std::to_string(exposure_time) << ".";
-    return false;
-  }
-  DLOG(INFO) << "Set " << serial_number_ << "'s exposure time to " << std::to_string(exposure_time) << ".";
   return true;
 }
 
@@ -244,4 +235,13 @@ void *camera::hik::HikCamera::DaemonThreadFunction(void *obj) {
     }
   }
   return nullptr;
+}
+
+bool camera::hik::HikCamera::SetExposureTimeHikImplementation(float exposure_time) {
+  if (MV_CC_SetFloatValue(device_, "ExposureTime", exposure_time) != MV_OK) {
+    LOG(ERROR) << "Failed to set " << serial_number_ << "'s exposure time to " << std::to_string(exposure_time) << ".";
+    return false;
+  }
+  DLOG(INFO) << "Set " << serial_number_ << "'s exposure time to " << std::to_string(exposure_time) << ".";
+  return true;
 }

@@ -1,7 +1,8 @@
+#include <glog/logging.h>
 #include "controller-base.h"
 #include "cli-arg-parser/cli-arg-parser.h"
 
-bool controller::Controller::Initialize(const std::string &type_name) {
+bool controller::Controller::Initialize(std::string REF_IN type_name) {
   video_source_.reset(video_source::CreateVideoSource(cli_argv.VideoSourceType()));
   if (!video_source_) {
     LOG(ERROR) << "Failed to create type " << type_name << " video source.";

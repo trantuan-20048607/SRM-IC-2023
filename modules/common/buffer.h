@@ -3,13 +3,19 @@
 
 #include <mutex>
 
+/**
+ * @brief 带锁循环队列，自动丢弃旧数据
+ * @tparam T 数据类型
+ * @tparam N 循环队列大小
+ */
 template<typename T, size_t N>
 class Buffer final {
  private:
-  std::array<T, N> data_;
-  size_t head_{}, tail_{};
-  bool full_{};
-  std::mutex lock_;
+  std::array<T, N> data_;  ///< 数据存储
+  size_t head_{};          ///< 头指针
+  size_t tail_{};          ///< 尾指针
+  bool full_{};            ///< 是否队满
+  std::mutex lock_;        ///< 操作锁
 
  public:
   Buffer() = default;
@@ -19,7 +25,7 @@ class Buffer final {
    * @brief 放入数据，队列已满时将覆盖旧数据
    * @param [in] obj 待移动数据
    */
-  inline void Push(T &&obj) {
+  void Push(T FWD_IN obj) {
     std::lock_guard<std::mutex> lock{lock_};
     data_[tail_] = std::forward<T>(obj);
     ++tail_ %= N;
@@ -32,7 +38,7 @@ class Buffer final {
    * @param [out] obj 数据目标位置
    * @return 队列是否为空
    */
-  inline bool Pop(T &obj) {
+  bool Pop(T REF_OUT obj) {
     std::lock_guard<std::mutex> lock{lock_};
     if (head_ == tail_ && !full_) return false;
     obj = std::move(data_[head_]);

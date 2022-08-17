@@ -2,9 +2,10 @@
 #define SRM_IC_2023_MODULES_COMMON_ARMOR_H_
 
 #include <opencv2/core/types.hpp>
-#include "attr-reader.h"
+#include "syntactic-sugar.h"
 #include "coordinate/coordinate.h"
 
+/// 装甲板数据类
 class Armor final {
  public:
   enum class ArmorSize { BIG, SMALL };  ///< 装甲板类型
@@ -16,9 +17,9 @@ class Armor final {
    * @param [in] euler_angle 当前云台姿态欧拉角
    * @param size 装甲板类型
    */
-  Armor(const std::array<cv::Point2f, 4> &corners,
-        const coordinate::CoordSolver &coord_solver,
-        const coordinate::EAngle &euler_angle,
+  Armor(std::array<cv::Point2f, 4> REF_IN corners,
+        coordinate::CoordSolver REF_IN coord_solver,
+        coordinate::EAngle REF_IN euler_angle,
         ArmorSize size);
 
   /// 图像上的四个角点

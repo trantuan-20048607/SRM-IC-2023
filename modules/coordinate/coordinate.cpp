@@ -10,7 +10,7 @@
 #include "simd/simd.h"
 #endif
 
-coordinate::EAngle coordinate::CoordSolver::RMatToEAngle(const RMat &rm) {
+coordinate::EAngle coordinate::CoordSolver::RMatToEAngle(RMat REF_IN rm) {
   constexpr double y_cos_threshold = 1e-6;
   double x, y, z;
 #ifdef USE_SIMD
@@ -45,7 +45,7 @@ coordinate::EAngle coordinate::CoordSolver::RMatToEAngle(const RMat &rm) {
   return {z, y, x};
 }
 
-coordinate::RMat coordinate::CoordSolver::EAngleToRMat(const EAngle &ea) {
+coordinate::RMat coordinate::CoordSolver::EAngleToRMat(EAngle REF_IN ea) {
   RMat rm_z, rm_y, rm_x;
 #ifdef USE_SIMD
   float ea_f[4] = {static_cast<float>(ea[0]), static_cast<float>(ea[1]), static_cast<float>(ea[2]), 0},
@@ -73,7 +73,7 @@ coordinate::RMat coordinate::CoordSolver::EAngleToRMat(const EAngle &ea) {
   return rm_z * rm_y * rm_x;
 }
 
-coordinate::CTVec coordinate::CoordSolver::STVecToCTVec(const STVec &stv) {
+coordinate::CTVec coordinate::CoordSolver::STVecToCTVec(STVec REF_IN stv) {
   CTVec ctv;
 #ifdef USE_SIMD
   float stv_sin_cos[4] = {static_cast<float>(stv.y()), static_cast<float>(stv.x()), 0, 0}, stv_sin[4], stv_cos[4];
@@ -91,7 +91,7 @@ coordinate::CTVec coordinate::CoordSolver::STVecToCTVec(const STVec &stv) {
   return ctv;
 }
 
-coordinate::STVec coordinate::CoordSolver::CTVecToSTVec(const CTVec &ctv) {
+coordinate::STVec coordinate::CoordSolver::CTVecToSTVec(CTVec REF_IN ctv) {
   STVec stv;
 #ifdef USE_SIMD
   float atan2_y[4] = {static_cast<float>(ctv.x()), static_cast<float>(-ctv.y()), 0, 0}, atan2_result[4], atan2_x[4] =
@@ -109,7 +109,7 @@ coordinate::STVec coordinate::CoordSolver::CTVecToSTVec(const CTVec &ctv) {
   return stv;
 }
 
-bool coordinate::CoordSolver::Initialize(const std::string &config_file, TMat tm_intrinsic, TMat tm_distortion) {
+bool coordinate::CoordSolver::Initialize(std::string REF_IN config_file, TMat tm_intrinsic, TMat tm_distortion) {
   cv::FileStorage coord_config;
   coord_config.open(config_file, cv::FileStorage::READ);
   if (!coord_config.isOpened()) {
@@ -149,10 +149,10 @@ bool coordinate::CoordSolver::Initialize(const std::string &config_file, TMat tm
 }
 
 void coordinate::CoordSolver::SolvePnP(
-    const std::array<Point3D, 4> &p3d_world,
-    const std::array<Point2D, 4> &p2d_pic,
-    const RMat &rm_imu,
-    PnPInfo &pnp_info) const {
+    std::array<Point3D, 4> REF_IN p3d_world,
+    std::array<Point2D, 4> REF_IN p2d_pic,
+    RMat REF_IN rm_imu,
+    PnPInfo REF_OUT pnp_info) const {
   cv::Mat rv_cam_cv, ctv_cam_cv, rm_cam_cv;
   cv::solvePnP(p3d_world, p2d_pic, tm_intrinsic_, tm_distortion_, rv_cam_cv, ctv_cam_cv,
                false, cv::SOLVEPNP_AP3P);
@@ -165,7 +165,7 @@ void coordinate::CoordSolver::SolvePnP(
   pnp_info.stv_world = CTVecToSTVec(pnp_info.ctv_world);
 }
 
-coordinate::CTVec coordinate::CoordSolver::CamToWorld(const CTVec &ctv_cam, const RMat &rm_imu) const {
+coordinate::CTVec coordinate::CoordSolver::CamToWorld(CTVec REF_IN ctv_cam, RMat REF_IN rm_imu) const {
   ExtCTVec ectv_cam, ectv_imu;
   CTVec ctv_imu, ctv_world;
   ectv_cam << ctv_cam[0], ctv_cam[1], ctv_cam[2], 1;
@@ -175,7 +175,7 @@ coordinate::CTVec coordinate::CoordSolver::CamToWorld(const CTVec &ctv_cam, cons
   return rm_imu * ctv_imu;
 }
 
-coordinate::CTVec coordinate::CoordSolver::WorldToCam(const CTVec &ctv_world, const RMat &rm_imu) const {
+coordinate::CTVec coordinate::CoordSolver::WorldToCam(CTVec REF_IN ctv_world, RMat REF_IN rm_imu) const {
   ExtCTVec ectv_cam, ectv_imu;
   CTVec ctv_imu, ctv_cam;
   ctv_imu = rm_imu.transpose() * ctv_world;
@@ -186,7 +186,7 @@ coordinate::CTVec coordinate::CoordSolver::WorldToCam(const CTVec &ctv_world, co
   return ctv_cam;
 }
 
-coordinate::Point2D coordinate::CoordSolver::CamToPic(const CTVec &ctv_cam) const {
+coordinate::Point2D coordinate::CoordSolver::CamToPic(CTVec REF_IN ctv_cam) const {
   Eigen::Matrix3d tm_intrinsic_eigen;
   cv::cv2eigen(tm_intrinsic_, tm_intrinsic_eigen);
   CTVec result = (1.f / ctv_cam.z()) * tm_intrinsic_eigen * ctv_cam;

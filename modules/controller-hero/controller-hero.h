@@ -4,13 +4,17 @@
 #include "controller-base/controller-base.h"
 
 namespace controller::hero {
+/**
+ * @brief 英雄机器人主控接口类
+ * @warning 禁止直接构造此类，请使用 @code controller::CreateController("hero") @endcode 获取该类的公共接口指针
+ */
 class HeroController final : public Controller {
  public:
   bool Initialize() final;
   int Run() final;
 
  private:
-  static Registry<HeroController> registry_;
+  static Registry<HeroController> registry_;  ///< 主控注册信息
 };
 }
 

@@ -1,4 +1,5 @@
 #include <csignal>
+#include <glog/logging.h>
 #include "cli-arg-parser/cli-arg-parser.h"
 #include "controller-base/controller-base.h"
 

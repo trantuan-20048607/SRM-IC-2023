@@ -1,10 +1,11 @@
 #include <glog/logging.h>
+#include <opencv2/videoio.hpp>
 #include "video-source-file.h"
 
 video_source::Registry<video_source::file::FileVideoSource>
     video_source::file::FileVideoSource::registry_("file");
 
-bool video_source::file::FileVideoSource::Initialize(const std::string &config_file) {
+bool video_source::file::FileVideoSource::Initialize(std::string REF_IN config_file) {
   cv::FileStorage video_init_config;
   video_init_config.open(config_file, cv::FileStorage::READ);
   if (!video_init_config.isOpened()) {
@@ -65,7 +66,7 @@ bool video_source::file::FileVideoSource::Initialize(const std::string &config_f
   return true;
 }
 
-bool video_source::file::FileVideoSource::GetFrame(Frame &frame) {
+bool video_source::file::FileVideoSource::GetFrame(Frame REF_OUT frame) {
   cv::Mat image;
   if (video_.read(image)) {
     frame.image = std::move(image);

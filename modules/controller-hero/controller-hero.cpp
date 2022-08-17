@@ -1,3 +1,4 @@
+#include <glog/logging.h>
 #include <opencv2/opencv.hpp>
 #include "controller-hero.h"
 #include "cli-arg-parser/cli-arg-parser.h"
@@ -41,7 +42,7 @@ int controller::hero::HeroController::Run() {
     return ret;
   };
 
-  auto update_window = [&](const std::string &title) {
+  auto update_window = [&](std::string REF_IN title) {
     static uint32_t rec_frame_count = 0;
     std::ostringstream ss_fps;
     ss_fps << std::fixed << std::setprecision(0) << show_fps;

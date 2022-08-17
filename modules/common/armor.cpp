@@ -1,9 +1,9 @@
 #include <glog/logging.h>
 #include "armor.h"
 
-Armor::Armor(const std::array<cv::Point2f, 4> &corners,
-             const coordinate::CoordSolver &coord_solver,
-             const coordinate::EAngle &euler_angle,
+Armor::Armor(std::array<cv::Point2f, 4> REF_IN corners,
+             coordinate::CoordSolver REF_IN coord_solver,
+             coordinate::EAngle REF_IN euler_angle,
              ArmorSize size) : size_(size) {
   for (auto i = 0; i < 4; ++i) corners_[i] = corners[i];
   std::array<coordinate::Point3D, 4> p3d_world;
@@ -24,7 +24,6 @@ Armor::Armor(const std::array<cv::Point2f, 4> &corners,
       break;
     }
   }
-  coord_solver.SolvePnP(p3d_world, corners_,
-                        coordinate::CoordSolver::EAngleToRMat(euler_angle), pnp_info_);
+  coord_solver.SolvePnP(p3d_world, corners_, coordinate::CoordSolver::EAngleToRMat(euler_angle), pnp_info_);
   center_ = coord_solver.CamToPic(pnp_info_.ctv_cam);
 }

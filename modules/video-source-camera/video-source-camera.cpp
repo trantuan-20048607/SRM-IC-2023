@@ -1,11 +1,12 @@
 #include <glog/logging.h>
 #include <opencv2/core/persistence.hpp>
+#include "camera-base/camera-base.h"
 #include "video-source-camera.h"
 
 video_source::Registry<video_source::camera::CameraVideoSource>
     video_source::camera::CameraVideoSource::registry_("camera");
 
-bool video_source::camera::CameraVideoSource::Initialize(const std::string &config_file) {
+bool video_source::camera::CameraVideoSource::Initialize(std::string REF_IN config_file) {
   cv::FileStorage camera_init_config;
   camera_init_config.open(config_file, cv::FileStorage::READ);
   if (!camera_init_config.isOpened()) {
@@ -87,7 +88,7 @@ bool video_source::camera::CameraVideoSource::Initialize(const std::string &conf
   return true;
 }
 
-bool video_source::camera::CameraVideoSource::GetFrame(Frame &frame) {
+bool video_source::camera::CameraVideoSource::GetFrame(Frame REF_OUT frame) {
   return camera_ != nullptr && camera_->GetFrame(frame);
 }
 

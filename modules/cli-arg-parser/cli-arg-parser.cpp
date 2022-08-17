@@ -23,15 +23,9 @@ void cli::CliArgParser::Parse(int argc, char **argv) {
   FLAGS_stop_logging_if_full_disk = true;
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   controller_type_ = FLAGS_controller_type;
-  DLOG(INFO) << "Controller type: " << controller_type_ << ".";
   video_source_type_ = FLAGS_video_source_type;
-  DLOG(INFO) << "Video source type: " << video_source_type_ << ".";
   std::ostringstream cli_flags;
   record_ = FLAGS_record;
-  if (record_) cli_flags << " record";
   serial_ = FLAGS_serial;
-  if (serial_) cli_flags << " serial";
   ui_ = FLAGS_ui;
-  if (ui_) cli_flags << " ui";
-  DLOG(INFO) << "CLI flags:" << cli_flags.str();
 }

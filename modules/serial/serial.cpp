@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <chrono>
+#include <glog/logging.h>
 #include "serial.h"
 
 #define LOCK_TIMEOUT 8
@@ -44,7 +45,7 @@ void serial::Serial::Close() {
   com_flag_ = false;
 }
 
-bool serial::Serial::ReadData(ReceivePacket &data) {
+bool serial::Serial::ReadData(ReceivePacket REF_OUT data) {
   if (!com_flag_) return false;
   std::unique_lock<std::timed_mutex> lock(receive_data_lock_, std::chrono::milliseconds(LOCK_TIMEOUT));
   if (lock.owns_lock()) {
@@ -57,7 +58,7 @@ bool serial::Serial::ReadData(ReceivePacket &data) {
   }
 }
 
-bool serial::Serial::WriteData(const SendPacket &data) {
+bool serial::Serial::WriteData(SendPacket REF_IN data) {
   if (!com_flag_) return false;
   std::unique_lock<std::timed_mutex> lock(send_data_lock_, std::chrono::milliseconds(LOCK_TIMEOUT));
   if (lock.owns_lock()) {
