@@ -5,7 +5,6 @@
 #include <atomic>
 #include <opencv2/videoio.hpp>
 #include "common/buffer.h"
-#include "common/syntactic-sugar.h"
 
 namespace video_writer {
 /// 视频录像接口

@@ -3,7 +3,6 @@
 
 #include "common/factory.h"
 #include "common/frame.h"
-#include "common/syntactic-sugar.h"
 
 enable_factory(video_source, VideoSource)
 
