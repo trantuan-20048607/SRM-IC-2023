@@ -7,9 +7,6 @@ set(MVS_PATH /opt/MVS)  # MVS 相机驱动目录
 set(DH_CAM_PATH /opt/Galaxy_camera)  # Galaxy 相机驱动目录
 
 set(CMAKE_CXX_STANDARD 20)
-if (CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "x86_64")
-    add_compile_options(-msse2)
-endif ()
 if (CMAKE_BUILD_TYPE STREQUAL Debug)
     add_compile_options(-O0)
 elseif (CMAKE_BUILD_TYPE STREQUAL Release)
