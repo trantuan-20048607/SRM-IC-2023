@@ -7,14 +7,14 @@
 #include "coordinate/coordinate.h"
 
 /// 抓取并处理来自操作系统的控制信号
-void SignalHandler(int signal);
+void SignalHandler(int);
 
 enable_factory(controller, Controller)
 
 namespace controller {
 /// 机器人主控公共接口类
 class Controller {
-  friend void::SignalHandler(int signal);
+  friend void::SignalHandler(int);
  public:
   Controller() = default;
   virtual ~Controller() = default;
