@@ -6,7 +6,7 @@
 #endif
 #if defined(__x86_64__) | defined(__aarch64__)
 #define USE_SSE2
-#include "sse-math/sse-math-extended.h"
+#include "sse-math/sse-math.h"
 #else
 #include <cmath>
 #endif
