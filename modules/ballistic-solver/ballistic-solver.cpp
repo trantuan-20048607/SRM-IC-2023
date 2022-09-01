@@ -67,11 +67,14 @@ bool ballistic_solver::BallisticSolver::Solve(
     CVec REF_IN target_x, double start_v, CVec REF_IN intrinsic_v,
     BallisticInfo REF_OUT solution_out, double REF_OUT error_out) {
   constexpr size_t max_iter = 32;
-  constexpr double error_limit = 0.02;
+  constexpr double error_limit = 0.01;
+
   intrinsic_v_ = intrinsic_v;
   bool exist_solution = false;
+  double target_phi = target_x.x() / target_x.z();
   double min_theta = -M_PI / 2, max_theta = M_PI / 2, mid_theta;
   double min_phi = -M_PI / 2, max_phi = M_PI / 2, mid_phi;
+
   double last_target_x_y;
   std::vector<BallisticInfo> solutions;
   std::function<bool(double t, CVec REF_IN v, CVec REF_IN x)> solution_cond = [&](
@@ -82,7 +85,8 @@ bool ballistic_solver::BallisticSolver::Solve(
   }, iter_cond = [&](double t, CVec REF_IN v, CVec REF_IN x) -> bool {
     return solutions.size() < 2 && x.y() < fmax(target_x.y(), 0);
   };
-  double min_error = Eigen::Vector2d(target_x.z(), target_x.x()).norm();
+
+  double min_error = Eigen::Vector2d(target_x.x(), target_x.z()).norm();
   BallisticInfo min_error_solution;
   size_t n = 0;
   while (n < max_iter && min_error > error_limit) {
@@ -92,15 +96,16 @@ bool ballistic_solver::BallisticSolver::Solve(
     last_target_x_y = target_x.y();
     SetParam(coordinate::CoordSolver::STVecToCTVec({mid_phi, mid_theta, start_v}));
     Solve(solution_cond, iter_cond, solutions);
-    double error_z, error_x;
     if (!solutions.empty()) {
       exist_solution = true;
       BallisticInfo *solution;
       if (solutions.size() == 2) {
-        if (solutions[1].x.z() < target_x.z()) {
+        if (Eigen::Vector2d(solutions[1].x.z(), solutions[1].x.x()).norm()
+            < Eigen::Vector2d(target_x.z(), target_x.x()).norm()) {
           solution = &solutions[1];
           min_theta = mid_theta;
-        } else if (solutions[0].x.z() > target_x.z()) {
+        } else if (Eigen::Vector2d(solutions[0].x.z(), solutions[0].x.x()).norm()
+            > Eigen::Vector2d(target_x.z(), target_x.x()).norm()) {
           solution = &solutions[0];
           min_theta = mid_theta;
         } else {
@@ -108,16 +113,17 @@ bool ballistic_solver::BallisticSolver::Solve(
           max_theta = mid_theta;
         }
       } else {
-        // FIXME 仰角足够大（约 45 度）时，选取更远的目标解，并减少仰角
-        solution = &solutions[0];
-        if (error_z > 0) min_theta = mid_theta;
+        // FIXME 仰角足够大（约 45 度）时以下逻辑相反
+        if (Eigen::Vector2d(solutions[0].x.z(), solutions[0].x.x()).norm()
+            < Eigen::Vector2d(target_x.z(), target_x.x()).norm())
+          min_theta = mid_theta;
         else max_theta = mid_theta;
+        solution = &solutions[0];
       }
-      error_z = target_x.z() - solution->x.z();
-      error_x = target_x.x() - solution->x.x();
-      if (error_x > 0) min_phi = mid_phi;
+      double error_phi = target_phi - solution->x.x() / solution->x.z();
+      if (error_phi > 0) min_phi = mid_phi;
       else max_phi = mid_phi;
-      double error = Eigen::Vector2d(error_z, error_x).norm();
+      double error = (target_x - solution->x).norm();
       if (error < min_error) {
         min_error = error;
         min_error_solution = *solution;

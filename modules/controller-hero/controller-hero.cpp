@@ -1,5 +1,6 @@
 #include <glog/logging.h>
 #include <opencv2/opencv.hpp>
+#include "common/armor.h"
 #include "cli-arg-parser/cli-arg-parser.h"
 #include "ballistic-solver/ballistic-solver.h"
 #include "controller-hero.h"
@@ -23,7 +24,7 @@ int controller::hero::HeroController::Run() {
   auto g_model = std::make_shared<ballistic_solver::GravityModel>();
   g_model->SetParam(31);
   ballistic_solver.AddModel(g_model);
-  ballistic_solver.Initialize(0, 4, {0, -0.2, 0}, 4096);
+  ballistic_solver.Initialize(0, 4, {0, 0, 0}, 4096);
 
   constexpr auto frame_time_str = [](auto time_stamp) {
     static auto start_time = time_stamp;
@@ -109,28 +110,77 @@ int controller::hero::HeroController::Run() {
     }
   });
 
+  auto fix_aim_point = [&](Armor REF_IN armor, ballistic_solver::CVec REF_IN intrinsic_v)
+      -> ballistic_solver::CVec {
+    ballistic_solver::BallisticInfo solution;
+    double error;
+    if (ballistic_solver.Solve(armor.CTVecWorld(), frame_.receive_packet.bullet_speed, intrinsic_v, solution, error)) {
+      auto target_pic = coord_solver_.CamToPic(coord_solver_.WorldToCam(
+          solution.x, coordinate::CoordSolver::EAngleToRMat(
+              {frame_.receive_packet.roll, frame_.receive_packet.yaw, frame_.receive_packet.pitch})));
+      cv::circle(frame_.image, target_pic, 2, cv::Scalar(192, 0, 192), 2);
+      auto v_0_pic = coord_solver_.CamToPic(coord_solver_.WorldToCam(
+          coordinate::CoordSolver::STVecToCTVec(solution.v_0), coordinate::CoordSolver::EAngleToRMat(
+              {frame_.receive_packet.roll, frame_.receive_packet.yaw, frame_.receive_packet.pitch})));
+      cv::circle(frame_.image, v_0_pic, 2, cv::Scalar(0, 0, 192), 2);
+      return solution.v_0;
+    } else return {0, 0, 0};
+  };
+
+  auto draw_armor = [&](Armor REF_IN armor) {
+    for (size_t i = 0; i < 4; ++i)
+      cv::line(frame_.image, armor.Corners()[i], armor.Corners()[(i + 1) % 4], cv::Scalar(0, 192, 0), 2);
+    cv::circle(frame_.image, coord_solver_.CamToPic(armor.CTVecCam()), 2, cv::Scalar(0, 192, 0), 2);
+  };
+
+  std::function<void(void *, Frame &)> patch_default_bullet_speed = [](void *, Frame &frame) -> void {
+    frame.receive_packet.bullet_speed = 14;
+  };
+  if (!cli_argv.Serial())
+    video_source_->RegisterFrameCallback(&patch_default_bullet_speed, this);
+
+  cv::Point2f armor_center{50, 40};
+  cv::MouseCallback on_mouse = [](int event, int x, int y, int flags, void *userdata) -> void {
+    static bool armor_locked = false;
+    switch (event) {
+      case cv::EVENT_MOUSEMOVE:
+        if (!armor_locked) {
+          auto center = (cv::Point2f *) userdata;
+          center->x = static_cast<float>(x);
+          center->y = static_cast<float>(y);
+        }
+        break;
+      case cv::EVENT_LBUTTONDOWN: armor_locked = true;
+        break;
+      case cv::EVENT_RBUTTONDOWN: armor_locked = false;
+        break;
+      default: break;
+    }
+  };
+  cv::namedWindow("HERO");
+  cv::setMouseCallback("HERO", on_mouse, &armor_center);
+
   while (!exit_signal_) {
     start_count_fps();
     update_frame_data();
 
-    Eigen::Vector3d target_x = {0.1, -1.2, 6};
-    ballistic_solver::BallisticInfo solution;
-    double error;
-    if (ballistic_solver.Solve(target_x, 14, {0, 0, 0}, solution, error)) {
-      auto target_pic = coord_solver_.CamToPic(coord_solver_.WorldToCam(
-          target_x, coordinate::CoordSolver::EAngleToRMat(
-              {frame_.receive_packet.roll, frame_.receive_packet.yaw, frame_.receive_packet.pitch})));
-      cv::circle(frame_.image, target_pic, 2, cv::Scalar(0, 144, 0), 2);
-      auto solution_pic = coord_solver_.CamToPic(coord_solver_.WorldToCam(
-          solution.x, coordinate::CoordSolver::EAngleToRMat(
-              {frame_.receive_packet.roll, frame_.receive_packet.yaw, frame_.receive_packet.pitch})));
-      cv::circle(frame_.image, solution_pic, 2, cv::Scalar(144, 0, 144), 2);
+    if (!pause && show_warning) {
+      std::array<cv::Point2f, 4> armor_corners = {cv::Point2f{-50, -40}, {50, -40}, {50, 40}, {-50, 40}};
+      for (auto &&p : armor_corners) p += armor_center;
+      Armor armor{armor_corners, coord_solver_,
+                  {frame_.receive_packet.roll, frame_.receive_packet.yaw, frame_.receive_packet.pitch},
+                  Armor::ArmorSize::BIG};
+      draw_armor(armor);
+      fix_aim_point(armor, {0, 0, 0});
     }
 
     update_window("HERO");
     stop_count_fps();
     check_key();
   }
+
+  if (!cli_argv.Serial())
+    video_source_->UnregisterFrameCallback(&patch_default_bullet_speed);
 
   LOG(INFO) << "Main loop finished. Waiting for background tasks to exit.";
   if (auto_log_fps.joinable()) auto_log_fps.join();
