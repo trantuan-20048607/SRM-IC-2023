@@ -1,7 +1,8 @@
 #include <glog/logging.h>
 #include <opencv2/opencv.hpp>
-#include "controller-hero.h"
 #include "cli-arg-parser/cli-arg-parser.h"
+#include "ballistic-solver/ballistic-solver.h"
+#include "controller-hero.h"
 
 controller::Registry<controller::hero::HeroController> controller::hero::HeroController::registry_("hero");
 
@@ -15,6 +16,14 @@ int controller::hero::HeroController::Run() {
   double fps = 0, show_fps = 0;
   bool pause = false, show_warning = true;
   struct timespec ts_start{};
+  ballistic_solver::BallisticSolver ballistic_solver;
+  auto ar_model = std::make_shared<ballistic_solver::AirResistanceModel>();
+  ar_model->SetParam(0.26, 1002, 25, 0.0425, 0.041);
+  ballistic_solver.AddModel(ar_model);
+  auto g_model = std::make_shared<ballistic_solver::GravityModel>();
+  g_model->SetParam(31);
+  ballistic_solver.AddModel(g_model);
+  ballistic_solver.Initialize(0, 4, {0, -0.2, 0}, 4096);
 
   constexpr auto frame_time_str = [](auto time_stamp) {
     static auto start_time = time_stamp;
@@ -103,6 +112,21 @@ int controller::hero::HeroController::Run() {
   while (!exit_signal_) {
     start_count_fps();
     update_frame_data();
+
+    Eigen::Vector3d target_x = {0.1, -1.2, 6};
+    ballistic_solver::BallisticInfo solution;
+    double error;
+    if (ballistic_solver.Solve(target_x, 14, {0, 0, 0}, solution, error)) {
+      auto target_pic = coord_solver_.CamToPic(coord_solver_.WorldToCam(
+          target_x, coordinate::CoordSolver::EAngleToRMat(
+              {frame_.receive_packet.roll, frame_.receive_packet.yaw, frame_.receive_packet.pitch})));
+      cv::circle(frame_.image, target_pic, 2, cv::Scalar(0, 144, 0), 2);
+      auto solution_pic = coord_solver_.CamToPic(coord_solver_.WorldToCam(
+          solution.x, coordinate::CoordSolver::EAngleToRMat(
+              {frame_.receive_packet.roll, frame_.receive_packet.yaw, frame_.receive_packet.pitch})));
+      cv::circle(frame_.image, solution_pic, 2, cv::Scalar(144, 0, 144), 2);
+    }
+
     update_window("HERO");
     stop_count_fps();
     check_key();

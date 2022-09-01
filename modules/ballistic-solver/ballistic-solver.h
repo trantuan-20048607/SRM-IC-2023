@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <Eigen/Core>
+#include "common/syntactic-sugar.h"
 #include "common/rk4-solver.h"
 
 namespace ballistic_solver {
@@ -40,7 +41,7 @@ class AirResistanceModel final : public Model {
   double coeff_{};  ///< 最终空气阻力系数 C，满足 f = C * v^2
 };
 
-/// 重力模型，假设：弹丸近似为球体
+/// 重力模型，假设：弹丸近似为球体；海拔高度近似为 0
 class GravityModel final : public Model {
  public:
   /**
@@ -59,13 +60,13 @@ class GravityModel final : public Model {
 class BallisticEquation {
  public:
   /**
-   * @brief 增加一个阻力模型
+   * @brief 增加一个受力模型
    * @param [in] model 模型指针
    */
   void AddModel(std::shared_ptr<Model> REF_IN model);
 
   /**
-   * @brief 计算阻力加速度
+   * @brief 计算合力加速度
    * @param t 当前时间，单位：s
    * @param v 当前速度，单位：m/s, m/s, m/s
    * @return 当前阻力加速度，单位：m/s^2, m/s^2, m/s^2
@@ -73,7 +74,7 @@ class BallisticEquation {
   CVec operator()(double t, CVec v) const;
 
  private:
-  std::vector<std::shared_ptr<Model>> models_;  ///< 弹道模型列表
+  std::vector<std::shared_ptr<Model>> models_;  ///< 受力模型列表
 };
 
 /// 子弹命中数据
@@ -107,9 +108,12 @@ class BallisticSolver {
    * @param [in] target_x 目标位置，单位：m, m, m
    * @param start_v 子弹相对自身的初速度，单位：m/s
    * @param [in] intrinsic_v 自身相对于地面的固有速度，单位：m/s, m/s, m/s
-   * @return 近似最优解数据
+   * @param [out] solution_out 输出近似最优解数据
+   * @param [out] error_out 输出近似最优解对应的水平面误差，单位：m
+   * @return 是否存在解
    */
-  BallisticInfo Solve(CVec REF_IN target_x, double start_v, CVec REF_IN intrinsic_v);
+  bool Solve(CVec REF_IN target_x, double start_v, CVec REF_IN intrinsic_v,
+             BallisticInfo REF_OUT solution_out, double REF_OUT error_out);
 
  private:
   /**
@@ -120,8 +124,8 @@ class BallisticSolver {
 
   /**
    * @brief 给定条件，求解满足条件的弹丸终点
-   * @param [in] solution_cond 弹丸终点满足的条件
-   * @param [in] iter_cond 继续迭代的条件
+   * @param solution_cond 弹丸终点满足的条件
+   * @param iter_cond 继续迭代的条件
    * @param [out] solutions 弹道数据列表
    */
   void Solve(std::function<bool(double t, CVec REF_IN v, CVec REF_IN x)> REF_IN solution_cond,

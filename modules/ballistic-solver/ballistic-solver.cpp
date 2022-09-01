@@ -1,6 +1,6 @@
 #include <glog/logging.h>
-#include "coordinate/coordinate.h"
 #include "ballistic-solver.h"
+#include "coordinate/coordinate.h"
 
 void ballistic_solver::AirResistanceModel::SetParam(double c, double p, double t, double d, double m) {
   constexpr double T = 273.15, atm = 1013.25;
@@ -26,10 +26,9 @@ void ballistic_solver::BallisticEquation::AddModel(std::shared_ptr<Model> REF_IN
 }
 
 ballistic_solver::CVec ballistic_solver::BallisticEquation::operator()(double t, CVec v) const {
-  CVec result{};
-  for (auto &&model : models_)
-    result += (*model)(t, v);
-  return result;
+  CVec acc{0, 0, 0};
+  for (auto &&model : models_) acc += (*model)(t, v);
+  return acc;
 }
 
 void ballistic_solver::BallisticSolver::AddModel(const std::shared_ptr<Model> &model) {
@@ -64,32 +63,71 @@ void ballistic_solver::BallisticSolver::Solve(
   }
 }
 
-ballistic_solver::BallisticInfo ballistic_solver::BallisticSolver::Solve(
-    CVec REF_IN target_x, double start_v, CVec REF_IN intrinsic_v) {
-  constexpr size_t max_iter = 16;
+bool ballistic_solver::BallisticSolver::Solve(
+    CVec REF_IN target_x, double start_v, CVec REF_IN intrinsic_v,
+    BallisticInfo REF_OUT solution_out, double REF_OUT error_out) {
+  constexpr size_t max_iter = 32;
+  constexpr double error_limit = 0.02;
   intrinsic_v_ = intrinsic_v;
-  size_t n = 0;
+  bool exist_solution = false;
   double min_theta = -M_PI / 2, max_theta = M_PI / 2, mid_theta;
   double min_phi = -M_PI / 2, max_phi = M_PI / 2, mid_phi;
+  double last_target_x_y;
   std::vector<BallisticInfo> solutions;
   std::function<bool(double t, CVec REF_IN v, CVec REF_IN x)> solution_cond = [&](
       double t, CVec REF_IN v, CVec REF_IN x) -> bool {
-    static double last_h = target_x.y();
-    bool result = (target_x.y() - x.y()) * (target_x.y() - last_h) < 0;
-    last_h = x.y();
-    return result;
+    bool approach_target = (target_x.y() - x.y()) * (target_x.y() - last_target_x_y) < 0;
+    last_target_x_y = x.y();
+    return approach_target;
   }, iter_cond = [&](double t, CVec REF_IN v, CVec REF_IN x) -> bool {
-    return solutions.size() < 2;
+    return solutions.size() < 2 && x.y() < fmax(target_x.y(), 0);
   };
-
-  do {
+  double min_error = Eigen::Vector2d(target_x.z(), target_x.x()).norm();
+  BallisticInfo min_error_solution;
+  size_t n = 0;
+  while (n < max_iter && min_error > error_limit) {
+    n += 1;
     mid_theta = (min_theta + max_theta) / 2;
     mid_phi = (min_phi + max_phi) / 2;
+    last_target_x_y = target_x.y();
     SetParam(coordinate::CoordSolver::STVecToCTVec({mid_phi, mid_theta, start_v}));
     Solve(solution_cond, iter_cond, solutions);
-    // 是否达到目标高度（有解）
-    // TODO 完善逻辑
-  } while (n++ < max_iter);
-
-  return {};
+    double error_z, error_x;
+    if (!solutions.empty()) {
+      exist_solution = true;
+      BallisticInfo *solution;
+      if (solutions.size() == 2) {
+        if (solutions[1].x.z() < target_x.z()) {
+          solution = &solutions[1];
+          min_theta = mid_theta;
+        } else if (solutions[0].x.z() > target_x.z()) {
+          solution = &solutions[0];
+          min_theta = mid_theta;
+        } else {
+          solution = &solutions[0];
+          max_theta = mid_theta;
+        }
+      } else {
+        // FIXME 仰角足够大（约 45 度）时，选取更远的目标解，并减少仰角
+        solution = &solutions[0];
+        if (error_z > 0) min_theta = mid_theta;
+        else max_theta = mid_theta;
+      }
+      error_z = target_x.z() - solution->x.z();
+      error_x = target_x.x() - solution->x.x();
+      if (error_x > 0) min_phi = mid_phi;
+      else max_phi = mid_phi;
+      double error = Eigen::Vector2d(error_z, error_x).norm();
+      if (error < min_error) {
+        min_error = error;
+        min_error_solution = *solution;
+      }
+    } else
+      min_theta = mid_theta;
+  }
+  if (min_error / Eigen::Vector2d(target_x.z(), target_x.x()).norm() > 0.05)
+    LOG(WARNING) << "Error of ballistic solution is more than 5%, the solution should not be trusted.";
+  error_out = min_error;
+  solution_out = min_error_solution;
+  return exist_solution;
 }
