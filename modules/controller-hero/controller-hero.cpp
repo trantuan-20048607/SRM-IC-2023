@@ -24,7 +24,11 @@ int controller::hero::HeroController::Run() {
   auto g_model = std::make_shared<ballistic_solver::GravityModel>();
   g_model->SetParam(31);
   ballistic_solver.AddModel(g_model);
-  ballistic_solver.Initialize(0, 4, {0, 0, 0}, 4096);
+#if NDEBUG
+  ballistic_solver.Initialize(0, 4, {0, 0, 0}, 2048);
+#else
+  ballistic_solver.Initialize(0, 4, {0, 0, 0}, 512);
+#endif
 
   constexpr auto frame_time_str = [](auto time_stamp) {
     static auto start_time = time_stamp;
