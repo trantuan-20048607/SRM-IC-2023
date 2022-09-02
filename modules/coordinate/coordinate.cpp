@@ -138,6 +138,7 @@ bool coordinate::CoordSolver::Initialize(std::string REF_IN config_file, TMat tm
   double determinant;
   etm_ic_.computeInverseAndDetWithCheck(etm_ci_, determinant, invertible);
   if (!invertible) {
+    ctv_cw_ = {};
     ctv_iw_ = {};
     etm_ic_ = {};
     etm_ci_ = {};
