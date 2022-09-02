@@ -17,6 +17,7 @@ int controller::hero::HeroController::Run() {
   double fps = 0, show_fps = 0;
   bool pause = false, show_warning = true;
   struct timespec ts_start{};
+  coordinate::EAngle current_attitude{0, 0, 0};
   ballistic_solver::BallisticSolver ballistic_solver;
   auto ar_model = std::make_shared<ballistic_solver::AirResistanceModel>();
   ar_model->SetParam(0.26, 1002, 25, 0.0425, 0.041);
@@ -25,9 +26,9 @@ int controller::hero::HeroController::Run() {
   g_model->SetParam(31);
   ballistic_solver.AddModel(g_model);
 #if NDEBUG
-  ballistic_solver.Initialize(0, 4, {0, 0, 0}, 2048);
+  ballistic_solver.Initialize(coord_solver_.CTVecCamWorld(), 0.001);
 #else
-  ballistic_solver.Initialize(0, 4, {0, 0, 0}, 512);
+  ballistic_solver.Initialize(coord_solver_.CTVecCamWorld(), 0.01);
 #endif
 
   constexpr auto frame_time_str = [](auto time_stamp) {
@@ -49,6 +50,7 @@ int controller::hero::HeroController::Run() {
   auto update_frame_data = [&]() {
     if (pause) return false;
     auto ret = video_source_->GetFrame(frame_);
+    if (ret) current_attitude = {frame_.receive_packet.roll, frame_.receive_packet.yaw, frame_.receive_packet.pitch};
     if (!ret && show_warning)
       LOG(WARNING) << "Failed to get frame data from video source."
                    << " Wait for reconnecting the camera or press Ctrl-C to exit.";
@@ -120,12 +122,11 @@ int controller::hero::HeroController::Run() {
     double error;
     if (ballistic_solver.Solve(armor.CTVecWorld(), frame_.receive_packet.bullet_speed, intrinsic_v, solution, error)) {
       auto target_pic = coord_solver_.CamToPic(coord_solver_.WorldToCam(
-          solution.x, coordinate::CoordSolver::EAngleToRMat(
-              {frame_.receive_packet.roll, frame_.receive_packet.yaw, frame_.receive_packet.pitch})));
+          solution.x, coordinate::CoordSolver::EAngleToRMat(current_attitude)));
       cv::circle(frame_.image, target_pic, 2, cv::Scalar(192, 0, 192), 2);
       auto v_0_pic = coord_solver_.CamToPic(coord_solver_.WorldToCam(
-          coordinate::CoordSolver::STVecToCTVec(solution.v_0), coordinate::CoordSolver::EAngleToRMat(
-              {frame_.receive_packet.roll, frame_.receive_packet.yaw, frame_.receive_packet.pitch})));
+          coordinate::CoordSolver::STVecToCTVec(solution.v_0),
+          coordinate::CoordSolver::EAngleToRMat(current_attitude)));
       cv::circle(frame_.image, v_0_pic, 2, cv::Scalar(0, 0, 192), 2);
       return solution.v_0;
     } else return {0, 0, 0};
@@ -133,7 +134,7 @@ int controller::hero::HeroController::Run() {
 
   auto draw_armor = [&](Armor REF_IN armor) {
     for (size_t i = 0; i < 4; ++i)
-      cv::line(frame_.image, armor.Corners()[i], armor.Corners()[(i + 1) % 4], cv::Scalar(0, 192, 0), 2);
+      cv::line(frame_.image, armor.Vertexes()[i], armor.Vertexes()[(i + 1) % 4], cv::Scalar(0, 192, 0), 2);
     cv::circle(frame_.image, coord_solver_.CamToPic(armor.CTVecCam()), 2, cv::Scalar(0, 192, 0), 2);
   };
 
@@ -143,7 +144,7 @@ int controller::hero::HeroController::Run() {
   if (!cli_argv.Serial())
     video_source_->RegisterFrameCallback(&patch_default_bullet_speed, this);
 
-  cv::Point2f armor_center{50, 40};
+  cv::Point2f armor_center{45, 40};
   cv::MouseCallback on_mouse = [](int event, int x, int y, int flags, void *userdata) -> void {
     static bool armor_locked = false;
     switch (event) {
@@ -161,19 +162,20 @@ int controller::hero::HeroController::Run() {
       default: break;
     }
   };
-  cv::namedWindow("HERO");
-  cv::setMouseCallback("HERO", on_mouse, &armor_center);
+
+  if (cli_argv.UI()) {
+    cv::namedWindow("HERO");
+    cv::setMouseCallback("HERO", on_mouse, &armor_center);
+  }
 
   while (!exit_signal_) {
     start_count_fps();
     update_frame_data();
 
-    if (!pause && show_warning) {
-      std::array<cv::Point2f, 4> armor_corners = {cv::Point2f{-50, -40}, {50, -40}, {50, 40}, {-50, 40}};
-      for (auto &&p : armor_corners) p += armor_center;
-      Armor armor{armor_corners, coord_solver_,
-                  {frame_.receive_packet.roll, frame_.receive_packet.yaw, frame_.receive_packet.pitch},
-                  Armor::ArmorSize::BIG};
+    if (cli_argv.UI() && !pause && show_warning) {
+      std::array<cv::Point2f, 4> armor_vertexes = {cv::Point2f{-45, -40}, {45, -40}, {45, 40}, {-45, 40}};
+      for (auto &&p : armor_vertexes) p += armor_center;
+      Armor armor{armor_vertexes, coord_solver_, current_attitude, Armor::ArmorSize::SMALL};
       draw_armor(armor);
       fix_aim_point(armor, {0, 0, 0});
     }

@@ -1,11 +1,11 @@
 #include <glog/logging.h>
 #include "armor.h"
 
-Armor::Armor(std::array<cv::Point2f, 4> REF_IN corners,
+Armor::Armor(std::array<cv::Point2f, 4> REF_IN vertexes,
              coordinate::CoordSolver REF_IN coord_solver,
              coordinate::EAngle REF_IN euler_angle,
              ArmorSize size) : size_(size) {
-  for (auto i = 0; i < 4; ++i) corners_[i] = corners[i];
+  for (auto i = 0; i < 4; ++i) vertexes_[i] = vertexes[i];
   std::array<coordinate::Point3D, 4> p3d_world;
   switch (size_) {
     case ArmorSize::BIG: {
@@ -24,6 +24,6 @@ Armor::Armor(std::array<cv::Point2f, 4> REF_IN corners,
       break;
     }
   }
-  coord_solver.SolvePnP(p3d_world, corners_, coordinate::CoordSolver::EAngleToRMat(euler_angle), pnp_info_);
+  coord_solver.SolvePnP(p3d_world, vertexes_, coordinate::CoordSolver::EAngleToRMat(euler_angle), pnp_info_);
   center_ = coord_solver.CamToPic(pnp_info_.ctv_cam);
 }

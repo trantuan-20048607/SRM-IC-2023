@@ -12,18 +12,18 @@ class Armor final {
 
   /**
    * @brief 构造装甲板对象
-   * @param [in] corners 四个图像坐标点
+   * @param [in] vertexes 四个图像坐标点
    * @param [in] coord_solver 坐标系求解方式
    * @param [in] euler_angle 当前云台姿态欧拉角
    * @param size 装甲板类型
    */
-  Armor(std::array<cv::Point2f, 4> REF_IN corners,
+  Armor(std::array<cv::Point2f, 4> REF_IN vertexes,
         coordinate::CoordSolver REF_IN coord_solver,
         coordinate::EAngle REF_IN euler_angle,
         ArmorSize size);
 
   /// 图像上的四个角点
-  attr_reader_ref(corners_, Corners)
+  attr_reader_ref(vertexes_, Vertexes)
   /// 装甲板中心在图像上的位置
   attr_reader_ref(center_, Center)
   /// 装甲板中心在相机坐标系中的直角坐标
@@ -40,7 +40,7 @@ class Armor final {
   attr_reader_val(size_, Size)
 
  private:
-  std::array<cv::Point2f, 4> corners_;  ///< 图像上的四个角点
+  std::array<cv::Point2f, 4> vertexes_;  ///< 图像上的四个角点
   coordinate::PnPInfo pnp_info_;        ///< PnP 求解信息，记录当前装甲板的相机坐标和世界坐标
   cv::Point2f center_;                  ///< 装甲板中心在图像上的位置
   ArmorSize size_;                      ///< 装甲板类型

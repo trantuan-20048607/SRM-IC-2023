@@ -34,6 +34,7 @@ class CoordSolver {
   ExtTMat etm_ic_;      ///< 陀螺仪坐标系转换到相机坐标系
   ExtTMat etm_ci_;      ///< 相机坐标系转换到陀螺仪坐标系
   CTVec ctv_iw_;        ///< 陀螺仪相对世界坐标系原点的位移
+  CTVec ctv_cw_;        ///< 相机相对世界坐标系原点的位移
 
  public:
   /**
@@ -63,6 +64,9 @@ class CoordSolver {
    * @return 转换后的直角坐标
    */
   static CTVec STVecToCTVec(STVec REF_IN stv);
+
+  attr_reader_ref(ctv_iw_, CTVecIMUWorld)  ///< 陀螺仪相对世界坐标系原点的位移
+  attr_reader_ref(ctv_cw_, CTVecCamWorld)  ///< 相机相对世界坐标系原点的位移
 
   /**
    * @brief 初始化坐标系参数

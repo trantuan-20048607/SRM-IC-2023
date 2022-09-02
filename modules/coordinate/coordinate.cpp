@@ -125,6 +125,8 @@ bool coordinate::CoordSolver::Initialize(std::string REF_IN config_file, TMat tm
     return false;
   }
   ctv_iw_ << ctv_iw_std[0], ctv_iw_std[1], ctv_iw_std[2];
+  ctv_cw_ << ctv_ci_std[0], ctv_ci_std[1], ctv_ci_std[2];
+  ctv_cw_ += ctv_iw_;
   EAngle ea_cw;
   ea_cw << ea_cw_std[0], ea_cw_std[1], ea_cw_std[2];
   RMat rm_cw = EAngleToRMat(ea_cw);
